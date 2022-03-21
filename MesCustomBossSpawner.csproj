@@ -1,0 +1,177 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+        <ProjectGuid>{8C851CF2-822C-4D9F-AD05-6ABF464B3054}</ProjectGuid>
+        <OutputType>Library</OutputType>
+        <AppDesignerFolder>Properties</AppDesignerFolder>
+        <AssemblyName>MesCustomBossSpawner</AssemblyName>
+        <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+        <FileAlignment>512</FileAlignment>
+        <LangVersion>6</LangVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <Optimize>false</Optimize>
+        <OutputPath>bin\Debug\</OutputPath>
+        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\Release\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <ItemGroup>
+        <Reference Include="System" />
+        <Reference Include="System.Core" />
+        <Reference Include="System.Data" />
+        <Reference Include="System.Xml" />
+    </ItemGroup>
+    <ItemGroup>
+        <Reference Include="ProtoBuf.Net">
+            <HintPath>..\Bin64\ProtoBuf.Net.dll</HintPath>
+        </Reference>
+        <Reference Include="ProtoBuf.Net.Core">
+            <HintPath>..\Bin64\ProtoBuf.Net.Core.dll</HintPath>
+        </Reference>
+        <Reference Include="Sandbox.Common">
+            <HintPath>..\Bin64\Sandbox.Common.dll</HintPath>
+        </Reference>
+        <Reference Include="Sandbox.Game">
+            <HintPath>..\Bin64\Sandbox.Game.dll</HintPath>
+        </Reference>
+        <Reference Include="Sandbox.Game.XmlSerializers">
+            <HintPath>..\Bin64\Sandbox.Game.XmlSerializers.dll</HintPath>
+        </Reference>
+        <Reference Include="Sandbox.Graphics">
+            <HintPath>..\Bin64\Sandbox.Graphics.dll</HintPath>
+        </Reference>
+        <Reference Include="Sandbox.RenderDirect">
+            <HintPath>..\Bin64\Sandbox.RenderDirect.dll</HintPath>
+        </Reference>
+        <Reference Include="SpaceEngineers.Game">
+            <HintPath>..\Bin64\SpaceEngineers.Game.dll</HintPath>
+        </Reference>
+        <Reference Include="SpaceEngineers.ObjectBuilders">
+            <HintPath>..\Bin64\SpaceEngineers.ObjectBuilders.dll</HintPath>
+        </Reference>
+        <Reference Include="SpaceEngineers.ObjectBuilders.XmlSerializers">
+            <HintPath>..\Bin64\SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage">
+            <HintPath>..\Bin64\VRage.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Ansel">
+            <HintPath>..\Bin64\VRage.Ansel.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Audio">
+            <HintPath>..\Bin64\VRage.Audio.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Game">
+            <HintPath>..\Bin64\VRage.Game.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Game.XmlSerializers">
+            <HintPath>..\Bin64\VRage.Game.XmlSerializers.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Input">
+            <HintPath>..\Bin64\VRage.Input.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Library">
+            <HintPath>..\Bin64\VRage.Library.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Math">
+            <HintPath>..\Bin64\VRage.Math.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Math.XmlSerializers">
+            <HintPath>..\Bin64\VRage.Math.XmlSerializers.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Mod.Io">
+            <HintPath>..\Bin64\VRage.Mod.Io.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.NativeAftermath">
+            <HintPath>..\Bin64\VRage.NativeAftermath.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.NativeWrapper">
+            <HintPath>..\Bin64\VRage.NativeWrapper.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Network">
+            <HintPath>..\Bin64\VRage.Network.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Platform.Windows">
+            <HintPath>..\Bin64\VRage.Platform.Windows.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Render">
+            <HintPath>..\Bin64\VRage.Render.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Render11">
+            <HintPath>..\Bin64\VRage.Render11.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Scripting">
+            <HintPath>..\Bin64\VRage.Scripting.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.Steam">
+            <HintPath>..\Bin64\VRage.Steam.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.UserInterface">
+            <HintPath>..\Bin64\VRage.UserInterface.dll</HintPath>
+        </Reference>
+        <Reference Include="VRage.XmlSerializers">
+            <HintPath>..\Bin64\VRage.XmlSerializers.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\Command.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\CommandModule.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ICommandListener.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\IProtobufListener.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ProtobufModule.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\ProtobufUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\ContentFile.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Disposable.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\GameUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\JumpDriveSuppressor.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\LangUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LogConfig.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\Logger.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LoggerManager.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\MathUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\DictionaryPool.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\ListPool.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\SetPool.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\SafeZoneSuppressor.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityObserver.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityTracker.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\SerializableDictionaryUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateDiagnostics.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateSpanObserver.cs" />
+        <Compile Include="Properties\AssemblyInfo.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <Folder Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner" />
+    </ItemGroup>
+    <ItemGroup>
+      <Content Include="Content\Data\Scripts\HNZ\Utils\.git" />
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+    <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+         Other similar extension points exist, see Microsoft.Common.targets.
+    <Target Name="BeforeBuild">
+    </Target>
+    <Target Name="AfterBuild">
+    </Target>
+    -->
+
+</Project>
