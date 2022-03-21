@@ -130,6 +130,15 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsApi.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSource.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSourceBinary.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\ModStorageId.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Session.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\ScheduleConfig.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossTimer.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MES\MESApi.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
@@ -158,9 +167,6 @@
         <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateDiagnostics.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateSpanObserver.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner" />
     </ItemGroup>
     <ItemGroup>
       <Content Include="Content\Data\Scripts\HNZ\Utils\.git" />
