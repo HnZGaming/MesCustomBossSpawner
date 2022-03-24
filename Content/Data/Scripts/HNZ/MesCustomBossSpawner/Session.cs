@@ -16,7 +16,7 @@ namespace HNZ.MesCustomBossSpawner
     {
         static readonly Logger Log = LoggerManager.Create(nameof(Session));
         ContentFile<Config> _configFile;
-        Dictionary<string, Action<Command>> _commands;
+        Dictionary<string, Action<Command>> _serverCommands;
         ProtobufModule _protobufModule;
         CommandModule _commandModule;
         MESApi _mesApi;
@@ -27,19 +27,23 @@ namespace HNZ.MesCustomBossSpawner
 
         public override void LoadData()
         {
-            LoggerManager.SetPrefix(nameof(MesCustomBossSpawner));
+            Log.Info("init");
 
-            _commands = new Dictionary<string, Action<Command>>
-            {
-                { "reload", Command_Reload },
-                { "spawn", Command_Spawn },
-            };
+            LoggerManager.SetPrefix(nameof(MesCustomBossSpawner));
 
             _protobufModule = new ProtobufModule((ushort)nameof(LocalGps).GetHashCode());
             _protobufModule.Initialize();
 
             _commandModule = new CommandModule(_protobufModule, 1, "cbs", this);
             _commandModule.Initialize();
+
+            if (!MyAPIGateway.Session.IsServer) return;
+
+            _serverCommands = new Dictionary<string, Action<Command>>
+            {
+                { "reload", Command_Reload },
+                { "spawn", Command_Spawn },
+            };
 
             _mesApi = new MESApi();
 
@@ -48,22 +52,15 @@ namespace HNZ.MesCustomBossSpawner
             _bossTimer.OnClose += OnBossTimeClose;
 
             ReloadConfig();
-
-            Log.Info("init");
-        }
-
-        void ReloadConfig()
-        {
-            _configFile = new ContentFile<Config>("Config.cfg", Config.CreateDefault());
-            _configFile.ReadOrCreateFile();
-            Config.Instance = _configFile.Content;
-            LoggerManager.SetConfigs(Config.Instance.Logs);
         }
 
         protected override void UnloadData()
         {
             _protobufModule.Close();
             _commandModule.Close();
+
+            if (!MyAPIGateway.Session.IsServer) return;
+
             _bossTimer.OnOpen -= OnBossTimeOpen;
             _bossTimer.OnClose -= OnBossTimeClose;
             _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
@@ -73,6 +70,8 @@ namespace HNZ.MesCustomBossSpawner
         {
             _protobufModule.Update();
             _commandModule.Update();
+
+            if (!MyAPIGateway.Session.IsServer) return;
 
             if (LangUtils.RunOnce(ref _runOnce))
             {
@@ -89,7 +88,7 @@ namespace HNZ.MesCustomBossSpawner
                 }
             }
 
-            if (!_bossGrid.IsNullOrClosed() && !_cleanupIgnored)
+            if (!_cleanupIgnored && !_bossGrid.IsNullOrClosed())
             {
                 _cleanupIgnored = _mesApi.SetSpawnerIgnoreForDespawn(_bossGrid, true);
                 if (_cleanupIgnored)
@@ -99,9 +98,17 @@ namespace HNZ.MesCustomBossSpawner
             }
         }
 
+        void ReloadConfig()
+        {
+            _configFile = new ContentFile<Config>("Config.cfg", Config.CreateDefault());
+            _configFile.ReadOrCreateFile();
+            Config.Instance = _configFile.Content;
+            LoggerManager.SetConfigs(Config.Instance.Logs);
+        }
+
         void ICommandListener.ProcessCommandOnServer(Command command)
         {
-            _commands.GetValueOrDefault(command.Header, null)?.Invoke(command);
+            _serverCommands.GetValueOrDefault(command.Header, null)?.Invoke(command);
         }
 
         void Command_Reload(Command command)
@@ -152,7 +159,7 @@ namespace HNZ.MesCustomBossSpawner
             {
                 // don't delete the boss if players are around it
                 var pos = _bossGrid.GetPosition();
-                var sphere = new BoundingSphereD(pos, 1000);
+                var sphere = new BoundingSphereD(pos, 10000);
                 if (GameUtils.GetPlayerCharacterCountInSphere(sphere) > 0) return;
 
                 CloseBossGrid();
@@ -185,7 +192,16 @@ namespace HNZ.MesCustomBossSpawner
                 _bossGrid = grid;
                 _cleanupIgnored = false;
                 Log.Info($"Boss spawn found: {grid.DisplayName}");
+
+                //todo need test
+                _mesApi.RegisterDespawnWatcher(_bossGrid, OnBossDispawned);
             }
+        }
+
+        void OnBossDispawned(IMyCubeGrid grid, string type)
+        {
+            Log.Info($"Boss dispawned: {grid.DisplayName}, cause: {type}");
+            _bossGrid = null;
         }
 
         bool TryGetSpawnPosition(out Vector3D position)
