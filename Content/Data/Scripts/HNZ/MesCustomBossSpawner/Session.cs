@@ -103,6 +103,7 @@ namespace HNZ.MesCustomBossSpawner
             _configFile = new ContentFile<Config>("Config.cfg", Config.CreateDefault());
             _configFile.ReadOrCreateFile();
             Config.Instance = _configFile.Content;
+            Config.Instance.TryInitialize();
             LoggerManager.SetConfigs(Config.Instance.Logs);
         }
 

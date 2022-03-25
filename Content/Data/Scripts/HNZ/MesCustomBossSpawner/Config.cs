@@ -1,4 +1,6 @@
-﻿using System.Xml.Serialization;
+﻿using System;
+using System.Xml.Serialization;
+using HNZ.Utils;
 using HNZ.Utils.Logging;
 using VRage.Utils;
 
@@ -25,6 +27,14 @@ namespace HNZ.MesCustomBossSpawner
 
         [XmlElement]
         public LogConfig[] Logs;
+
+        public void TryInitialize()
+        {
+            LangUtils.AssertNull(SpawnGroup);
+            LangUtils.AssertNull(ModStorageId);
+            LangUtils.NullOrDefault(ref Schedules, Array.Empty<ScheduleConfig>());
+            LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
+        }
 
         public static Config CreateDefault() => new Config
         {
