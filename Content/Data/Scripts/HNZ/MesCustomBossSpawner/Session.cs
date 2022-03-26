@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Communications;
 using HNZ.Utils.Logging;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
-using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -19,11 +17,8 @@ namespace HNZ.MesCustomBossSpawner
         Dictionary<string, Action<Command>> _serverCommands;
         ProtobufModule _protobufModule;
         CommandModule _commandModule;
-        MESApi _mesApi;
-        BossTimer _bossTimer;
-        IMyCubeGrid _bossGrid;
-        bool _runOnce;
-        bool _cleanupIgnored;
+        Scheduler _scheduler;
+        Core _core;
 
         public override void LoadData()
         {
@@ -43,13 +38,12 @@ namespace HNZ.MesCustomBossSpawner
             {
                 { "reload", Command_Reload },
                 { "spawn", Command_Spawn },
+                { "despawn", Command_Despawn },
             };
 
-            _mesApi = new MESApi();
-
-            _bossTimer = new BossTimer();
-            _bossTimer.OnOpen += OnBossTimeOpen;
-            _bossTimer.OnClose += OnBossTimeClose;
+            _scheduler = new Scheduler();
+            _core = new Core(_scheduler);
+            _core.Initialize();
 
             ReloadConfig();
         }
@@ -61,9 +55,7 @@ namespace HNZ.MesCustomBossSpawner
 
             if (!MyAPIGateway.Session.IsServer) return;
 
-            _bossTimer.OnOpen -= OnBossTimeOpen;
-            _bossTimer.OnClose -= OnBossTimeClose;
-            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
+            _core.Close();
         }
 
         public override void UpdateBeforeSimulation()
@@ -73,29 +65,7 @@ namespace HNZ.MesCustomBossSpawner
 
             if (!MyAPIGateway.Session.IsServer) return;
 
-            if (LangUtils.RunOnce(ref _runOnce))
-            {
-                _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, true);
-            }
-
-            if (GameUtils.EverySeconds(1))
-            {
-                _bossTimer.Update();
-
-                if (!_bossTimer.IsOpen && !_bossGrid.IsNullOrClosed())
-                {
-                    OnBossTimeClose();
-                }
-            }
-
-            if (!_cleanupIgnored && !_bossGrid.IsNullOrClosed())
-            {
-                _cleanupIgnored = _mesApi.SetSpawnerIgnoreForDespawn(_bossGrid, true);
-                if (_cleanupIgnored)
-                {
-                    Log.Info("cleanup ignored");
-                }
-            }
+            _core.Update();
         }
 
         void ReloadConfig()
@@ -105,6 +75,11 @@ namespace HNZ.MesCustomBossSpawner
             Config.Instance = _configFile.Content;
             Config.Instance.TryInitialize();
             LoggerManager.SetConfigs(Config.Instance.Logs);
+        }
+
+        bool ICommandListener.ProcessCommandOnClient(Command command)
+        {
+            return false;
         }
 
         void ICommandListener.ProcessCommandOnServer(Command command)
@@ -120,112 +95,14 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_Spawn(Command command)
         {
-            var name = command.Arguments[0];
-
-            IMyPlayer player;
-            if (!GameUtils.TryGetPlayerBySteamId(command.SteamId, out player))
-            {
-                command.Respond("CBS", Color.Yellow, "player not found");
-                return;
-            }
-
-            var pos = player.Character.GetPosition();
-            var result = TryBossSpawn(name, pos, true);
-
+            var result = _core.TrySpawn();
             command.Respond("CBS", Color.White, $"spawn result: {result}");
         }
 
-        void OnBossTimeOpen()
+        void Command_Despawn(Command command)
         {
-            Vector3D position;
-            if (!TryGetSpawnPosition(out position))
-            {
-                Log.Warn("spawn failed: no space");
-                return;
-            }
-
-            if (TryBossSpawn(Config.Instance.SpawnGroup, position, true))
-            {
-                Log.Info("boss spawn success");
-            }
-            else
-            {
-                Log.Warn("boss spawn fail");
-            }
-        }
-
-        void OnBossTimeClose()
-        {
-            if (!_bossGrid.IsNullOrClosed())
-            {
-                // don't delete the boss if players are around it
-                var pos = _bossGrid.GetPosition();
-                var sphere = new BoundingSphereD(pos, 10000);
-                if (GameUtils.GetPlayerCharacterCountInSphere(sphere) > 0) return;
-
-                CloseBossGrid();
-            }
-        }
-
-        bool TryBossSpawn(string spawnGroup, Vector3D position, bool ignoreSafetyCheck)
-        {
-            CloseBossGrid();
-
-            Log.Info($"spawning boss: {spawnGroup} at {position}");
-
-            var matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
-            return _mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, null, nameof(MesCustomBossSpawner));
-        }
-
-        void CloseBossGrid()
-        {
-            if (!_bossGrid.IsNullOrClosed())
-            {
-                _bossGrid.Close();
-                Log.Info("closed the boss grid");
-            }
-        }
-
-        void OnMesAnySuccessfulSpawn(IMyCubeGrid grid)
-        {
-            if (Config.Instance.ModStorageId.Test(grid.Storage))
-            {
-                _bossGrid = grid;
-                _cleanupIgnored = false;
-                Log.Info($"Boss spawn found: {grid.DisplayName}");
-
-                //todo need test
-                _mesApi.RegisterDespawnWatcher(_bossGrid, OnBossDispawned);
-            }
-        }
-
-        void OnBossDispawned(IMyCubeGrid grid, string type)
-        {
-            Log.Info($"Boss dispawned: {grid.DisplayName}, cause: {type}");
-            _bossGrid = null;
-        }
-
-        bool TryGetSpawnPosition(out Vector3D position)
-        {
-            for (var i = 0; i < 100; i++)
-            {
-                // get a random position
-                position = MathUtils.GetRandomUnitDirection() * Config.Instance.SpawnRadius;
-
-                // check for gravity
-                float gravityInterference;
-                var gravity = MyAPIGateway.Physics.CalculateNaturalGravityAt(position, out gravityInterference);
-                if (gravity != Vector3.Zero) continue;
-
-                // check for space
-                var sphere = new BoundingSphereD(position, Config.Instance.ClearanceRadius);
-                if (GameUtils.GetEntityCountInSphere(sphere) > 0) continue;
-
-                return true;
-            }
-
-            position = default(Vector3D);
-            return false;
+            _core.TryCleanup();
+            command.Respond("CBS", Color.White, "despawn command");
         }
     }
 }
