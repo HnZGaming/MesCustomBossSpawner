@@ -26,7 +26,7 @@ namespace HNZ.MesCustomBossSpawner
 
             LoggerManager.SetPrefix(nameof(MesCustomBossSpawner));
 
-            _protobufModule = new ProtobufModule((ushort)nameof(LocalGps).GetHashCode());
+            _protobufModule = new ProtobufModule((ushort)nameof(MesCustomBossSpawner).GetHashCode());
             _protobufModule.Initialize();
 
             _commandModule = new CommandModule(_protobufModule, 1, "cbs", this);
