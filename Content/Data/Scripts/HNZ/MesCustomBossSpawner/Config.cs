@@ -38,8 +38,8 @@ namespace HNZ.MesCustomBossSpawner
         {
             LangUtils.AssertNull(SpawnGroup);
             LangUtils.AssertNull(ModStorageId);
-            LangUtils.AssertNull(CountdownGpsName);
-            LangUtils.AssertNull(CountdownGpsDescription);
+            LangUtils.NullOrDefault(ref CountdownGpsName, "");
+            LangUtils.NullOrDefault(ref CountdownGpsDescription, "");
             LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
             LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
         }
