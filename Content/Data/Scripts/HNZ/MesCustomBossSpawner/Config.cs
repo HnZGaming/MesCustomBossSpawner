@@ -14,7 +14,13 @@ namespace HNZ.MesCustomBossSpawner
         public string SpawnGroup;
 
         [XmlElement]
-        public ModStorageId ModStorageId;
+        public ModStorageEntry ModStorageId;
+
+        [XmlElement]
+        public string CountdownGpsName;
+
+        [XmlElement]
+        public string CountdownGpsDescription;
 
         [XmlElement]
         public float SpawnRadius;
@@ -23,7 +29,7 @@ namespace HNZ.MesCustomBossSpawner
         public double ClearanceRadius;
 
         [XmlElement]
-        public ScheduleConfig[] Schedules;
+        public Schedule[] Schedules;
 
         [XmlElement]
         public LogConfig[] Logs;
@@ -32,14 +38,16 @@ namespace HNZ.MesCustomBossSpawner
         {
             LangUtils.AssertNull(SpawnGroup);
             LangUtils.AssertNull(ModStorageId);
-            LangUtils.NullOrDefault(ref Schedules, Array.Empty<ScheduleConfig>());
+            LangUtils.AssertNull(CountdownGpsName);
+            LangUtils.AssertNull(CountdownGpsDescription);
+            LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
             LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
         }
 
         public static Config CreateDefault() => new Config
         {
             SpawnGroup = "Porks-SpawnGroup-Boss-BigMekKrooza",
-            ModStorageId = new ModStorageId
+            ModStorageId = new ModStorageEntry
             {
                 Key = "b97e4f0d-6a55-4dcf-a471-448132e68e82",
                 Value = "Bababooey",
@@ -48,11 +56,10 @@ namespace HNZ.MesCustomBossSpawner
             ClearanceRadius = 1000,
             Schedules = new[]
             {
-                new ScheduleConfig
+                new Schedule
                 {
                     OffsetHours = 0,
                     IntervalHours = 0.01f,
-                    SpanHours = 0.01f,
                 },
             },
             Logs = new[]

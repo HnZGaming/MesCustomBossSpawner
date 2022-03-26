@@ -134,11 +134,12 @@
         <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSource.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSourceBinary.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\ModStorageId.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Core.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Schedule.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Scheduler.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Session.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\ScheduleConfig.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossTimer.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MES\MESApi.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MES\MESGrid.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
@@ -157,6 +158,7 @@
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\Logger.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LoggerManager.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\MathUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\ModStorageEntry.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\DictionaryPool.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\ListPool.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\SetPool.cs" />
