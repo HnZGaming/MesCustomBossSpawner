@@ -66,6 +66,7 @@ namespace HNZ.MES
             if (_grid != null && _grid.Closed)
             {
                 Close();
+                Log.Info($"boss grid closed by someone else: {_grid.DisplayName}");
                 return;
             }
 
@@ -97,7 +98,7 @@ namespace HNZ.MES
 
         void OnBlockOwnershipChanged(IMyCubeGrid _)
         {
-            Log.Info($"compromised: {_grid.DisplayName}");
+            //Log.Info($"compromised: {_grid.DisplayName}");
             Compromised = true;
         }
 

@@ -2,35 +2,35 @@
 using Sandbox.ModAPI;
 using VRage;
 
-namespace HNZ.LocalGps.Interface
+namespace HNZ.FlashGps.Interface
 {
-    public class LocalGpsApi
+    public class FlashGpsApi
     {
-        public static readonly long ModVersion = "LocalGpsApi 1.0.*".GetHashCode();
+        public static readonly long ModVersion = "FlashGpsApi 1.1.*".GetHashCode();
 
         readonly long _moduleId;
 
-        public LocalGpsApi(long moduleId)
+        public FlashGpsApi(long moduleId)
         {
             _moduleId = moduleId;
         }
 
-        public void AddOrUpdateLocalGps(LocalGpsSource src)
+        public void AddOrUpdate(FlashGpsSource src)
         {
             using (var stream = new ByteStream(1024))
             using (var writer = new BinaryWriter(stream))
             {
-                writer.WriteAddOrUpdateLocalGps(_moduleId, src);
+                writer.WriteAddOrUpdateFlashGps(_moduleId, src);
                 MyAPIGateway.Utilities.SendModMessage(ModVersion, stream.Data);
             }
         }
 
-        public void RemoveLocalGps(long gpsId)
+        public void Remove(long gpsId)
         {
             using (var stream = new ByteStream(1024))
             using (var writer = new BinaryWriter(stream))
             {
-                writer.WriteRemoveLocalGps(_moduleId, gpsId);
+                writer.WriteRemoveFlashGps(_moduleId, gpsId);
                 MyAPIGateway.Utilities.SendModMessage(ModVersion, stream.Data);
             }
         }
