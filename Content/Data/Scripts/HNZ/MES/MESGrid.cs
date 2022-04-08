@@ -22,7 +22,7 @@ namespace HNZ.MES
             _id = id;
         }
 
-        public bool Closed { get; private set; }
+        public bool Closed => _grid == null;
         public bool Compromised { get; private set; }
 
         public bool TryInitialize(string spawnGroup, Vector3D position, bool ignoreSafetyCheck)
@@ -32,7 +32,6 @@ namespace HNZ.MES
             var matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
             if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, null, nameof(MesCustomBossSpawner)))
             {
-                Closed = true;
                 return false;
             }
 
@@ -49,12 +48,11 @@ namespace HNZ.MES
                 _grid.OnBlockOwnershipChanged -= OnBlockOwnershipChanged;
             }
 
+            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
+
             _grid.OrNull()?.Close();
             _grid = null;
 
-            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
-
-            Closed = true;
             Log.Info("despawned grid");
         }
 
@@ -65,8 +63,8 @@ namespace HNZ.MES
             // deleted or whatever
             if (_grid != null && _grid.Closed)
             {
-                Close();
                 Log.Info($"boss grid closed by someone else: {_grid.DisplayName}");
+                Close();
                 return;
             }
 

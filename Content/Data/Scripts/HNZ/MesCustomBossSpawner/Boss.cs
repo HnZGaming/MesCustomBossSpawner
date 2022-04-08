@@ -32,9 +32,9 @@ namespace HNZ.MesCustomBossSpawner
 
         public void TryInitialize()
         {
-            LangUtils.AssertNull(Id);
-            LangUtils.AssertNull(SpawnGroup);
-            LangUtils.AssertNull(ModStorageId);
+            LangUtils.AssertNull(Id, nameof(Id));
+            LangUtils.AssertNull(SpawnGroup, nameof(SpawnGroup));
+            LangUtils.AssertNull(ModStorageId, nameof(ModStorageId));
             LangUtils.NullOrDefault(ref CountdownGpsName, "");
             LangUtils.NullOrDefault(ref CountdownGpsDescription, "");
             LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
