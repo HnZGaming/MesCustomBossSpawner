@@ -10,7 +10,13 @@ namespace HNZ.MesCustomBossSpawner
         public string Id;
 
         [XmlElement]
+        public bool Enabled;
+
+        [XmlElement]
         public string SpawnGroup;
+
+        [XmlElement]
+        public string FactionTag;
 
         [XmlElement]
         public ModStorageEntry ModStorageId;
@@ -43,6 +49,7 @@ namespace HNZ.MesCustomBossSpawner
         public static Boss CreateDefault() => new Boss
         {
             Id = "Bababooey",
+            Enabled = true,
             SpawnGroup = "Porks-SpawnGroup-Boss-BigMekKrooza",
             ModStorageId = new ModStorageEntry
             {

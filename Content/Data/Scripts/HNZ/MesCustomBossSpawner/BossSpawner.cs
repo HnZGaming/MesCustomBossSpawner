@@ -44,7 +44,7 @@ namespace HNZ.MesCustomBossSpawner
                 if (_scheduler.Update(DateTime.Now))
                 {
                     var result = TrySpawn();
-                    Log.Info($"scheduled spawn result: {result}");
+                    Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
                 }
             }
 
@@ -57,7 +57,7 @@ namespace HNZ.MesCustomBossSpawner
 
             if (GameUtils.EverySeconds(1))
             {
-                if ((_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
+                if (_bossInfo.Enabled && (_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
                 {
                     _gpsApi.AddOrUpdate(new FlashGpsSource
                     {
@@ -78,21 +78,26 @@ namespace HNZ.MesCustomBossSpawner
 
         public bool TrySpawn()
         {
+            if (!_bossInfo.Enabled)
+            {
+                return false;
+            }
+
             if (!(_bossGrid?.Closed ?? true))
             {
-                Log.Info("aborted spawning: already spawned");
+                Log.Info($"aborted spawning; already spawned: {_bossInfo.SpawnGroup}");
                 return false;
             }
 
             var position = _gpsPosition ?? MakeRandomPosition();
             if (!GameUtils.TryGetRandomPosition(position, 10000, 1000, out position))
             {
-                Log.Warn("failed spawning: no space");
+                Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
                 return false;
             }
 
             _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
-            return _bossGrid.TryInitialize(_bossInfo.SpawnGroup, position, true);
+            return _bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, position, true);
         }
 
         public void TryCleanup(float cleanupRange = 0f)

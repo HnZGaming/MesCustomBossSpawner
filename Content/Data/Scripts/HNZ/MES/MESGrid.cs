@@ -25,12 +25,12 @@ namespace HNZ.MES
         public bool Closed => _grid == null;
         public bool Compromised { get; private set; }
 
-        public bool TryInitialize(string spawnGroup, Vector3D position, bool ignoreSafetyCheck)
+        public bool TryInitialize(string spawnGroup, string factionTag, Vector3D position, bool ignoreSafetyCheck)
         {
             Log.Info($"spawning: {spawnGroup} at {position}");
 
             var matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
-            if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, null, nameof(MesCustomBossSpawner)))
+            if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, factionTag, nameof(MesCustomBossSpawner)))
             {
                 return false;
             }
