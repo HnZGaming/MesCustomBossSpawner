@@ -1,5 +1,5 @@
 ﻿using System;
-using HNZ.LocalGps.Interface;
+using HNZ.FlashGps.Interface;
 using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
@@ -7,26 +7,29 @@ using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
 {
-    public sealed class Core
+    public sealed class BossSpawner
     {
-        static readonly Logger Log = LoggerManager.Create(nameof(Core));
-        static readonly long GpsId = nameof(MesCustomBossSpawner).GetHashCode();
-
+        static readonly Logger Log = LoggerManager.Create(nameof(BossSpawner));
+        readonly Boss _bossInfo;
         readonly Scheduler _scheduler;
         readonly MESApi _mesApi;
-        readonly LocalGpsApi _gpsApi;
+        readonly FlashGpsApi _gpsApi;
+        readonly long _gpsId;
         MESGrid _bossGrid;
         Vector3D? _gpsPosition;
 
-        public Core(Scheduler scheduler)
+        public BossSpawner(MESApi mesApi, FlashGpsApi localGpsApi, Boss bossInfo)
         {
-            _scheduler = scheduler;
-            _mesApi = new MESApi();
-            _gpsApi = new LocalGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
+            _bossInfo = bossInfo;
+            _mesApi = mesApi;
+            _gpsApi = localGpsApi;
+            _scheduler = new Scheduler(bossInfo.Schedules);
+            _gpsId = bossInfo.Id.GetHashCode();
         }
 
         public void Initialize()
         {
+            _scheduler.Initialize(DateTime.Now);
         }
 
         public void Close()
@@ -41,7 +44,7 @@ namespace HNZ.MesCustomBossSpawner
                 if (_scheduler.Update(DateTime.Now))
                 {
                     var result = TrySpawn();
-                    Log.Info($"scheduled spawn result: {result}");
+                    Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
                 }
             }
 
@@ -54,42 +57,47 @@ namespace HNZ.MesCustomBossSpawner
 
             if (GameUtils.EverySeconds(1))
             {
-                if ((_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
+                if (_bossInfo.Enabled && (_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
                 {
-                    _gpsApi.AddOrUpdateLocalGps(new LocalGpsSource
+                    _gpsApi.AddOrUpdate(new FlashGpsSource
                     {
-                        Id = GpsId,
-                        Name = string.Format(Config.Instance.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
-                        Description = Config.Instance.CountdownGpsDescription,
+                        Id = _gpsId,
+                        Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
+                        Description = _bossInfo.CountdownGpsDescription,
                         Position = _gpsPosition.Value,
+                        DecaySeconds = 2,
                         Color = Color.Orange,
                     });
                 }
                 else
                 {
-                    _gpsApi.RemoveLocalGps(GpsId);
+                    _gpsApi.Remove(_gpsId);
                 }
             }
         }
 
         public bool TrySpawn()
         {
+            if (!_bossInfo.Enabled)
+            {
+                return false;
+            }
+
             if (!(_bossGrid?.Closed ?? true))
             {
-                Log.Info("aborted spawning: already spawned");
+                Log.Info($"aborted spawning; already spawned: {_bossInfo.SpawnGroup}");
                 return false;
             }
 
             var position = _gpsPosition ?? MakeRandomPosition();
             if (!GameUtils.TryGetRandomPosition(position, 10000, 1000, out position))
             {
-                Log.Warn("failed spawning: no space");
+                Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
                 return false;
             }
 
-            _bossGrid?.Close(); // just in case
-            _bossGrid = new MESGrid(_mesApi, Config.Instance.ModStorageId);
-            return _bossGrid.TryInitialize(Config.Instance.SpawnGroup, position, true);
+            _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
+            return _bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, position, true);
         }
 
         public void TryCleanup(float cleanupRange = 0f)
@@ -97,10 +105,10 @@ namespace HNZ.MesCustomBossSpawner
             _bossGrid?.TryCharacterDistanceCleanup(cleanupRange);
         }
 
-        static Vector3D MakeRandomPosition()
+        Vector3D MakeRandomPosition()
         {
             Vector3D position;
-            GameUtils.TryGetRandomPosition(Vector3D.Zero, Config.Instance.SpawnRadius, 1000, out position);
+            GameUtils.TryGetRandomPosition(Vector3D.Zero, _bossInfo.SpawnRadius, 1000, out position);
             return position;
         }
     }

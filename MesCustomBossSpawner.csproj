@@ -130,11 +130,12 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsApi.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSource.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\LocalGps.Interface\LocalGpsSourceBinary.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsApi.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSerialization.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSource.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Boss.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Core.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossSpawner.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Schedule.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Scheduler.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Session.cs" />

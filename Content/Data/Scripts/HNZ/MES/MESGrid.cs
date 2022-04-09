@@ -22,17 +22,16 @@ namespace HNZ.MES
             _id = id;
         }
 
-        public bool Closed { get; private set; }
+        public bool Closed => _grid == null;
         public bool Compromised { get; private set; }
 
-        public bool TryInitialize(string spawnGroup, Vector3D position, bool ignoreSafetyCheck)
+        public bool TryInitialize(string spawnGroup, string factionTag, Vector3D position, bool ignoreSafetyCheck)
         {
             Log.Info($"spawning: {spawnGroup} at {position}");
 
             var matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
-            if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, null, nameof(MesCustomBossSpawner)))
+            if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, factionTag, nameof(MesCustomBossSpawner)))
             {
-                Closed = true;
                 return false;
             }
 
@@ -49,12 +48,11 @@ namespace HNZ.MES
                 _grid.OnBlockOwnershipChanged -= OnBlockOwnershipChanged;
             }
 
+            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
+
             _grid.OrNull()?.Close();
             _grid = null;
 
-            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
-
-            Closed = true;
             Log.Info("despawned grid");
         }
 
@@ -65,6 +63,7 @@ namespace HNZ.MES
             // deleted or whatever
             if (_grid != null && _grid.Closed)
             {
+                Log.Info($"boss grid closed by someone else: {_grid.DisplayName}");
                 Close();
                 return;
             }
@@ -97,7 +96,7 @@ namespace HNZ.MES
 
         void OnBlockOwnershipChanged(IMyCubeGrid _)
         {
-            Log.Info($"compromised: {_grid.DisplayName}");
+            //Log.Info($"compromised: {_grid.DisplayName}");
             Compromised = true;
         }
 

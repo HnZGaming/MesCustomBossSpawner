@@ -1,31 +1,35 @@
 ﻿using System.IO;
 using Sandbox.ModAPI;
 
-namespace HNZ.LocalGps.Interface
+namespace HNZ.FlashGps.Interface
 {
-    public static class LocalGpsSourceBinary
+    public static class FlashGpsSerialization
     {
-        public static void WriteAddOrUpdateLocalGps(this BinaryWriter writer, long moduleId, LocalGpsSource src)
+        public static void WriteAddOrUpdateFlashGps(this BinaryWriter writer, long moduleId, FlashGpsSource src)
         {
+            // optimize network load
+            src.ExcludedPlayers = null;
+            src.TargetPlayers = null;
+
             writer.Write(true);
             writer.Write(moduleId);
             writer.WriteProtobuf(src);
         }
 
-        public static void WriteRemoveLocalGps(this BinaryWriter writer, long moduleId, long gpsId)
+        public static void WriteRemoveFlashGps(this BinaryWriter writer, long moduleId, long gpsId)
         {
             writer.Write(false);
             writer.Write(moduleId);
             writer.Write(gpsId);
         }
 
-        public static void ReadLocalGps(this BinaryReader reader, out bool isAddOrUpdate, out long moduleId, out LocalGpsSource source, out long gpsId)
+        public static void ReadFlashGps(this BinaryReader reader, out bool isAddOrUpdate, out long moduleId, out FlashGpsSource source, out long gpsId)
         {
             if (reader.ReadBoolean())
             {
                 isAddOrUpdate = true;
                 moduleId = reader.ReadInt64();
-                source = reader.ReadProtobuf<LocalGpsSource>();
+                source = reader.ReadProtobuf<FlashGpsSource>();
                 gpsId = source.Id;
             }
             else
