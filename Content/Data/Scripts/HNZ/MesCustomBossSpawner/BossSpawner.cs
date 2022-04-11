@@ -57,9 +57,14 @@ namespace HNZ.MesCustomBossSpawner
 
             if (GameUtils.EverySeconds(1))
             {
-                if (_bossInfo.Enabled && (_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
+                var bossEnabled = _bossInfo.Enabled;
+                var bossGridClosed = _bossGrid?.Closed ?? true;
+                var countdownStarted = _scheduler.Countdown != null;
+                Log.Debug($"every second; {bossEnabled} {bossGridClosed} {countdownStarted}");
+
+                if (bossEnabled && bossGridClosed && countdownStarted)
                 {
-                    _gpsApi.AddOrUpdate(new FlashGpsSource
+                    var gps = new FlashGpsSource
                     {
                         Id = _gpsId,
                         Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
@@ -67,7 +72,11 @@ namespace HNZ.MesCustomBossSpawner
                         Position = _gpsPosition.Value,
                         DecaySeconds = 2,
                         Color = Color.Orange,
-                    });
+                    };
+
+                    _gpsApi.AddOrUpdate(gps);
+
+                    Log.Debug($"countdown gps sending: {gps.Name}");
                 }
                 else
                 {

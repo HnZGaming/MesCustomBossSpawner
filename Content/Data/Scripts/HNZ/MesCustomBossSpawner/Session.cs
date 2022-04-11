@@ -89,6 +89,7 @@ namespace HNZ.MesCustomBossSpawner
             _configFile.ReadOrCreateFile();
             Config.Instance = _configFile.Content;
             Config.Instance.TryInitialize();
+            _configFile.WriteFile(); // fills missing fields
             LoggerManager.SetConfigs(Config.Instance.Logs);
 
             foreach (var bossSpawner in _bossSpawners)
@@ -109,6 +110,12 @@ namespace HNZ.MesCustomBossSpawner
 
         bool ICommandListener.ProcessCommandOnClient(Command command)
         {
+            if (!MyAPIGateway.Session.IsUserAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "admin only");
+                return true;
+            }
+
             return false;
         }
 
