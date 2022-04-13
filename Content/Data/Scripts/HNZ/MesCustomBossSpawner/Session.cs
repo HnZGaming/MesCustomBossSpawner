@@ -32,6 +32,7 @@ namespace HNZ.MesCustomBossSpawner
                 { "reload", Command_Reload },
                 { "spawn", Command_Spawn },
                 { "despawn", Command_Despawn },
+                { "reset", Command_ResetPosition },
             };
 
             _bossSpawners = new Dictionary<string, BossSpawner>();
@@ -160,6 +161,16 @@ namespace HNZ.MesCustomBossSpawner
             {
                 command.Respond("CBS", Color.Red, $"invalid id: {id}");
             }
+        }
+
+        void Command_ResetPosition(Command command)
+        {
+            foreach (var p in _bossSpawners)
+            {
+                p.Value.ResetSpawningPosition();
+            }
+
+            command.Respond("CBS", Color.White, "position reset");
         }
     }
 }

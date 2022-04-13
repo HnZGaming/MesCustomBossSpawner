@@ -3,6 +3,7 @@ using System.Xml.Serialization;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
 using VRage.Utils;
+using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
 {
@@ -13,6 +14,9 @@ namespace HNZ.MesCustomBossSpawner
         [XmlArray]
         public Boss[] Bosses;
 
+        [XmlArray]
+        public Sphere[] SpawnVoids;
+
         [XmlElement]
         public LogConfig[] Logs;
 
@@ -20,6 +24,7 @@ namespace HNZ.MesCustomBossSpawner
         {
             LangUtils.NullOrDefault(ref Bosses, Array.Empty<Boss>());
             LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
+            LangUtils.NullOrDefault(ref SpawnVoids, Array.Empty<Sphere>());
 
             foreach (var boss in Bosses)
             {
@@ -33,6 +38,10 @@ namespace HNZ.MesCustomBossSpawner
             {
                 Boss.CreateDefault()
             },
+            SpawnVoids = new[]
+            {
+                new Sphere(),
+            },
             Logs = new[]
             {
                 new LogConfig
@@ -42,5 +51,18 @@ namespace HNZ.MesCustomBossSpawner
                 }
             }
         };
+
+        public bool IntersectsAnySpawnVoids(BoundingSphereD sphere)
+        {
+            foreach (var voidSphere in SpawnVoids)
+            {
+                if (sphere.Contains(voidSphere) != ContainmentType.Disjoint)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }
