@@ -22,6 +22,9 @@ namespace HNZ.MesCustomBossSpawner
         public ModStorageEntry ModStorageId;
 
         [XmlElement]
+        public bool PlanetSpawn;
+
+        [XmlElement]
         public string CountdownGpsName;
 
         [XmlElement]
@@ -57,6 +60,7 @@ namespace HNZ.MesCustomBossSpawner
                 Key = "b97e4f0d-6a55-4dcf-a471-448132e68e82",
                 Value = "Bababooey",
             },
+            PlanetSpawn = false,
             SpawnSphere = new Sphere
             {
                 X = 0,
