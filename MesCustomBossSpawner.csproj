@@ -160,6 +160,7 @@
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Logging\LoggerManager.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\MathUtils.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\ModStorageEntry.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\PlanetCollection.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\DictionaryPool.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\ListPool.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Pools\SetPool.cs" />

@@ -16,7 +16,7 @@ namespace HNZ.MesCustomBossSpawner
         readonly FlashGpsApi _gpsApi;
         readonly long _gpsId;
         MESGrid _bossGrid;
-        Vector3D _spawningPosition;
+        MatrixD _spawningMatrix;
 
         public BossSpawner(MESApi mesApi, FlashGpsApi localGpsApi, Boss bossInfo)
         {
@@ -50,9 +50,11 @@ namespace HNZ.MesCustomBossSpawner
 
             _bossGrid?.Update();
 
-            if (_spawningPosition == Vector3.Zero)
+            // make the "would-be" matrix (before spawning the grid)
+            // so we can broadcast it earlier
+            if (_spawningMatrix == default(MatrixD))
             {
-                TryGetRandomPosition(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius, out _spawningPosition);
+                TrySetRandomPosition();
                 return;
             }
 
@@ -62,7 +64,6 @@ namespace HNZ.MesCustomBossSpawner
                 var bossGridClosed = _bossGrid?.Closed ?? true;
                 var countdownStarted = _scheduler.Countdown != null;
                 Log.Debug($"every second; {_bossInfo.Id}: {bossEnabled}, {bossGridClosed}, {countdownStarted}");
-                Log.Debug($"boss grid state; {_bossInfo.Id}: {_bossGrid != null}, {_bossGrid?.Closed}");
 
                 if (bossEnabled && bossGridClosed && countdownStarted)
                 {
@@ -71,7 +72,7 @@ namespace HNZ.MesCustomBossSpawner
                         Id = _gpsId,
                         Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
                         Description = _bossInfo.CountdownGpsDescription,
-                        Position = _spawningPosition,
+                        Position = _spawningMatrix.Translation,
                         DecaySeconds = 2,
                         Color = Color.Orange,
                     };
@@ -100,10 +101,12 @@ namespace HNZ.MesCustomBossSpawner
                 return false;
             }
 
-            if (_spawningPosition == Vector3.Zero)
+            // position would be zero (not set)
+            // if Update() hasn't been called
+            // or ResetSpawningPosition() has been called earlier
+            if (_spawningMatrix == default(MatrixD))
             {
-                var sphere = new BoundingSphereD(_spawningPosition, 10000);
-                if (!TryGetRandomPosition(sphere, 5000, out _spawningPosition))
+                if (!TrySetRandomPosition())
                 {
                     Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
                     return false;
@@ -111,13 +114,21 @@ namespace HNZ.MesCustomBossSpawner
             }
 
             _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
-            if (!_bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, _spawningPosition, true))
+            if (!_bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, _spawningMatrix, true))
             {
                 return false;
             }
 
-            _spawningPosition = Vector3D.Zero;
+            // reset so the next "spawn" attempt will generate a new matrix
+            _spawningMatrix = default(MatrixD);
             return true;
+        }
+
+        bool TrySetRandomPosition()
+        {
+            return _bossInfo.PlanetSpawn
+                ? TryGetRandomPositionOnPlanet(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius, out _spawningMatrix)
+                : TryGetRandomPosition(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius, out _spawningMatrix);
         }
 
         public void TryCleanup(float cleanupRange = 0f)
@@ -127,31 +138,59 @@ namespace HNZ.MesCustomBossSpawner
 
         public void ResetSpawningPosition()
         {
-            _spawningPosition = Vector3D.Zero;
+            _spawningMatrix = default(MatrixD);
         }
 
-        static bool TryGetRandomPosition(BoundingSphereD sphere, float clearance, out Vector3D position)
+        static bool TryGetRandomPosition(BoundingSphereD sphere, float clearance, out MatrixD matrix)
         {
             for (var i = 0; i < 100; i++)
             {
+                Vector3D position;
                 if (GameUtils.TryGetRandomPosition(sphere, clearance, 0, out position))
                 {
                     var tested = new BoundingSphereD(position, 10000);
                     if (!Config.Instance.IntersectsAnySpawnVoids(tested))
                     {
+                        matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
                         return true;
                     }
                 }
             }
 
-            position = default(Vector3D);
+            matrix = default(MatrixD);
             return false;
         }
 
-        static bool TryGetRandomPositionOnPlanetSurface(BoundingSphereD sphere, float clearance, out Vector3D position, out Vector3D upward)
+        //todo optimize
+        static bool TryGetRandomPositionOnPlanet(BoundingSphereD sphere, float clearance, out MatrixD matrix)
         {
-            position = Vector3D.Zero;
-            upward = Vector3D.Zero;
+            var position = MathUtils.GetRandomPosition(sphere);
+            var planet = PlanetCollection.GetClosestPlanet(position);
+            if (planet == null) // no planet in the world
+            {
+                matrix = default(MatrixD);
+                return false;
+            }
+
+            var planetSphere = new BoundingSphereD(planet.PositionComp.GetPosition(), planet.AverageRadius);
+            for (var i = 0; i < 100; i++)
+            {
+                var p = MathUtils.GetRandomPosition(planetSphere);
+                var surfacePoint = planet.GetClosestSurfacePointGlobal(p);
+                if (GameUtils.TestSurfaceFlat(planet, surfacePoint, 20f, 2f))
+                {
+                    var s = new BoundingSphereD(surfacePoint, clearance);
+                    if (!GameUtils.HasAnyGridsInSphere(s))
+                    {
+                        var surfaceNormal = (surfacePoint - planet.PositionComp.GetPosition()).Normalized();
+                        var forward = Vector3D.Cross(Vector3D.Cross(surfaceNormal, Vector3D.Forward), surfaceNormal);
+                        matrix = MatrixD.CreateWorld(surfacePoint, forward, surfaceNormal);
+                        return true;
+                    }
+                }
+            }
+
+            matrix = default(MatrixD);
             return false;
         }
     }

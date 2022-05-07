@@ -55,6 +55,8 @@ namespace HNZ.MesCustomBossSpawner
             _mesApi = new MESApi();
             _localGpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
 
+            PlanetCollection.Initialize();
+
             ReloadConfig();
         }
 
@@ -69,6 +71,8 @@ namespace HNZ.MesCustomBossSpawner
             {
                 bossSpawner.Value.Close();
             }
+
+            PlanetCollection.Close();
         }
 
         public override void UpdateBeforeSimulation()
