@@ -22,16 +22,19 @@ namespace HNZ.MesCustomBossSpawner
         public ModStorageEntry ModStorageId;
 
         [XmlElement]
+        public bool PlanetSpawn;
+
+        [XmlElement]
         public string CountdownGpsName;
 
         [XmlElement]
         public string CountdownGpsDescription;
 
         [XmlElement]
-        public float SpawnRadius;
+        public Sphere SpawnSphere;
 
         [XmlElement]
-        public double ClearanceRadius;
+        public float ClearanceRadius;
 
         [XmlArray]
         public Schedule[] Schedules;
@@ -41,6 +44,7 @@ namespace HNZ.MesCustomBossSpawner
             LangUtils.AssertNull(Id, nameof(Id));
             LangUtils.AssertNull(SpawnGroup, nameof(SpawnGroup));
             LangUtils.AssertNull(ModStorageId, nameof(ModStorageId));
+            LangUtils.NullOrDefault(ref SpawnSphere, new Sphere());
             LangUtils.NullOrDefault(ref CountdownGpsName, "");
             LangUtils.NullOrDefault(ref CountdownGpsDescription, "");
             LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
@@ -56,7 +60,14 @@ namespace HNZ.MesCustomBossSpawner
                 Key = "b97e4f0d-6a55-4dcf-a471-448132e68e82",
                 Value = "Bababooey",
             },
-            SpawnRadius = 2000000,
+            PlanetSpawn = false,
+            SpawnSphere = new Sphere
+            {
+                X = 0,
+                Y = 0,
+                Z = 0,
+                Radius = 2000000,
+            },
             ClearanceRadius = 1000,
             CountdownGpsName = "Spawning in {0}",
             CountdownGpsDescription = "Spawning very soon",

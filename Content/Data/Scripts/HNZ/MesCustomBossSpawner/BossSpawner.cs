@@ -16,7 +16,7 @@ namespace HNZ.MesCustomBossSpawner
         readonly FlashGpsApi _gpsApi;
         readonly long _gpsId;
         MESGrid _bossGrid;
-        Vector3D? _gpsPosition;
+        Vector3D _spawningPosition;
 
         public BossSpawner(MESApi mesApi, FlashGpsApi localGpsApi, Boss bossInfo)
         {
@@ -50,24 +50,35 @@ namespace HNZ.MesCustomBossSpawner
 
             _bossGrid?.Update();
 
-            if (_gpsPosition == null)
+            if (_spawningPosition == Vector3.Zero)
             {
-                _gpsPosition = MakeRandomPosition();
+                TryGetRandomPosition(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius, out _spawningPosition);
+                return;
             }
 
             if (GameUtils.EverySeconds(1))
             {
-                if (_bossInfo.Enabled && (_bossGrid?.Closed ?? true) && _scheduler.Countdown != null)
+                var bossEnabled = _bossInfo.Enabled;
+                var bossGridClosed = _bossGrid?.Closed ?? true;
+                var countdownStarted = _scheduler.Countdown != null;
+                Log.Debug($"every second; {_bossInfo.Id}: {bossEnabled}, {bossGridClosed}, {countdownStarted}");
+                Log.Debug($"boss grid state; {_bossInfo.Id}: {_bossGrid != null}, {_bossGrid?.Closed}");
+
+                if (bossEnabled && bossGridClosed && countdownStarted)
                 {
-                    _gpsApi.AddOrUpdate(new FlashGpsSource
+                    var gps = new FlashGpsSource
                     {
                         Id = _gpsId,
                         Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
                         Description = _bossInfo.CountdownGpsDescription,
-                        Position = _gpsPosition.Value,
+                        Position = _spawningPosition,
                         DecaySeconds = 2,
                         Color = Color.Orange,
-                    });
+                    };
+
+                    _gpsApi.AddOrUpdate(gps);
+
+                    Log.Debug($"countdown gps sending: {gps.Name}");
                 }
                 else
                 {
@@ -89,15 +100,24 @@ namespace HNZ.MesCustomBossSpawner
                 return false;
             }
 
-            var position = _gpsPosition ?? MakeRandomPosition();
-            if (!GameUtils.TryGetRandomPosition(position, 10000, 1000, out position))
+            if (_spawningPosition == Vector3.Zero)
             {
-                Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
-                return false;
+                var sphere = new BoundingSphereD(_spawningPosition, 10000);
+                if (!TryGetRandomPosition(sphere, 5000, out _spawningPosition))
+                {
+                    Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
+                    return false;
+                }
             }
 
             _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
-            return _bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, position, true);
+            if (!_bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, _spawningPosition, true))
+            {
+                return false;
+            }
+
+            _spawningPosition = Vector3D.Zero;
+            return true;
         }
 
         public void TryCleanup(float cleanupRange = 0f)
@@ -105,11 +125,34 @@ namespace HNZ.MesCustomBossSpawner
             _bossGrid?.TryCharacterDistanceCleanup(cleanupRange);
         }
 
-        Vector3D MakeRandomPosition()
+        public void ResetSpawningPosition()
         {
-            Vector3D position;
-            GameUtils.TryGetRandomPosition(Vector3D.Zero, _bossInfo.SpawnRadius, 1000, out position);
-            return position;
+            _spawningPosition = Vector3D.Zero;
+        }
+
+        static bool TryGetRandomPosition(BoundingSphereD sphere, float clearance, out Vector3D position)
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                if (GameUtils.TryGetRandomPosition(sphere, clearance, 0, out position))
+                {
+                    var tested = new BoundingSphereD(position, 10000);
+                    if (!Config.Instance.IntersectsAnySpawnVoids(tested))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            position = default(Vector3D);
+            return false;
+        }
+
+        static bool TryGetRandomPositionOnPlanetSurface(BoundingSphereD sphere, float clearance, out Vector3D position, out Vector3D upward)
+        {
+            position = Vector3D.Zero;
+            upward = Vector3D.Zero;
+            return false;
         }
     }
 }

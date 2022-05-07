@@ -32,6 +32,7 @@ namespace HNZ.MesCustomBossSpawner
                 { "reload", Command_Reload },
                 { "spawn", Command_Spawn },
                 { "despawn", Command_Despawn },
+                { "reset", Command_ResetPosition },
             };
 
             _bossSpawners = new Dictionary<string, BossSpawner>();
@@ -89,6 +90,7 @@ namespace HNZ.MesCustomBossSpawner
             _configFile.ReadOrCreateFile();
             Config.Instance = _configFile.Content;
             Config.Instance.TryInitialize();
+            _configFile.WriteFile(); // fills missing fields
             LoggerManager.SetConfigs(Config.Instance.Logs);
 
             foreach (var bossSpawner in _bossSpawners)
@@ -109,6 +111,12 @@ namespace HNZ.MesCustomBossSpawner
 
         bool ICommandListener.ProcessCommandOnClient(Command command)
         {
+            if (!MyAPIGateway.Session.IsUserAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "admin only");
+                return true;
+            }
+
             return false;
         }
 
@@ -153,6 +161,16 @@ namespace HNZ.MesCustomBossSpawner
             {
                 command.Respond("CBS", Color.Red, $"invalid id: {id}");
             }
+        }
+
+        void Command_ResetPosition(Command command)
+        {
+            foreach (var p in _bossSpawners)
+            {
+                p.Value.ResetSpawningPosition();
+            }
+
+            command.Respond("CBS", Color.White, "position reset");
         }
     }
 }

@@ -167,6 +167,7 @@
         <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityTracker.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\SerializableDictionaryUtils.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\Sphere.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateDiagnostics.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\UpdateSpanObserver.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />

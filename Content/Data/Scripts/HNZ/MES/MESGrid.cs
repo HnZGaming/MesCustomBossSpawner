@@ -14,6 +14,7 @@ namespace HNZ.MES
         readonly MESApi _mesApi;
         readonly ModStorageEntry _id;
         IMyCubeGrid _grid;
+        string _spawnGroup;
         bool _cleanupIgnored;
 
         public MESGrid(MESApi mesApi, ModStorageEntry id)
@@ -27,7 +28,9 @@ namespace HNZ.MES
 
         public bool TryInitialize(string spawnGroup, string factionTag, Vector3D position, bool ignoreSafetyCheck)
         {
-            Log.Info($"spawning: {spawnGroup} at {position}");
+            Log.Info($"spawning: [{factionTag}] {spawnGroup} at {position}");
+
+            _spawnGroup = spawnGroup;
 
             var matrix = MatrixD.CreateWorld(position, Vector3D.Forward, Vector3D.Up);
             if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, factionTag, nameof(MesCustomBossSpawner)))
@@ -53,7 +56,7 @@ namespace HNZ.MES
             _grid.OrNull()?.Close();
             _grid = null;
 
-            Log.Info("despawned grid");
+            Log.Info($"despawned grid: {_spawnGroup}");
         }
 
         public void Update()
@@ -73,7 +76,7 @@ namespace HNZ.MES
                 _cleanupIgnored = _mesApi.SetSpawnerIgnoreForDespawn(_grid, true);
                 if (_cleanupIgnored)
                 {
-                    Log.Info("cleanup ignored");
+                    Log.Info($"cleanup ignored: {_spawnGroup}");
                 }
             }
         }
@@ -82,7 +85,7 @@ namespace HNZ.MES
         {
             if (_id.TestPresence(grid.Storage))
             {
-                Log.Info($"spawn found: {grid.DisplayName}");
+                Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}; id: {_id}");
 
                 _grid = grid;
                 _cleanupIgnored = false;
