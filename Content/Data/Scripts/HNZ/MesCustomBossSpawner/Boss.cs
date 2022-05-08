@@ -36,6 +36,9 @@ namespace HNZ.MesCustomBossSpawner
         [XmlElement]
         public float ClearanceRadius;
 
+        [XmlElement]
+        public float GpsRadius;
+
         [XmlArray]
         public Schedule[] Schedules;
 
@@ -69,6 +72,7 @@ namespace HNZ.MesCustomBossSpawner
                 Radius = 2000000,
             },
             ClearanceRadius = 1000,
+            GpsRadius = 500000,
             CountdownGpsName = "Spawning in {0}",
             CountdownGpsDescription = "Spawning very soon",
             Schedules = new[]

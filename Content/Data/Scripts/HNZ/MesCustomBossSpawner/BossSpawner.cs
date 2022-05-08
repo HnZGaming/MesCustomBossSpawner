@@ -75,6 +75,7 @@ namespace HNZ.MesCustomBossSpawner
                         Position = _spawningMatrix.Translation,
                         DecaySeconds = 2,
                         Color = Color.Orange,
+                        Radius = _bossInfo.GpsRadius,
                     };
 
                     _gpsApi.AddOrUpdate(gps);
