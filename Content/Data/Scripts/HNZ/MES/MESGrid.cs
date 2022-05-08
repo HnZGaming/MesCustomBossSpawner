@@ -10,12 +10,16 @@ namespace HNZ.MES
     public sealed class MESGrid
     {
         static readonly Logger Log = LoggerManager.Create(nameof(MESGrid));
+        const float TimeoutSecs = 10;
 
         readonly MESApi _mesApi;
         readonly ModStorageEntry _id;
         IMyCubeGrid _grid;
         string _spawnGroup;
         bool _cleanupIgnored;
+        DateTime? _spawnedTime;
+        bool _spawning;
+        MatrixD _spawningMatrix;
 
         public MESGrid(MESApi mesApi, ModStorageEntry id)
         {
@@ -38,6 +42,9 @@ namespace HNZ.MES
             }
 
             _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, true);
+            _spawnedTime = DateTime.UtcNow;
+            _spawning = true;
+            _spawningMatrix = matrix;
             return true;
         }
 
@@ -55,11 +62,22 @@ namespace HNZ.MES
             _grid.OrNull()?.Close();
             _grid = null;
 
-            Log.Info($"despawned grid: {_spawnGroup}");
+            _spawning = false;
+            _spawnedTime = null;
+
+            Log.Info($"closed grid: {_spawnGroup}");
         }
 
         public void Update()
         {
+            var timeout = _spawnedTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
+            if (_spawning && _grid == null && timeout.HasValue && timeout.Value.TotalSeconds < 0)
+            {
+                Log.Warn($"timeout: {_spawnGroup}, {_id}");
+                Close();
+                return;
+            }
+
             if (Closed) return;
 
             // deleted or whatever
@@ -85,6 +103,13 @@ namespace HNZ.MES
             if (_id.TestPresence(grid.Storage))
             {
                 Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}; id: {_id}");
+
+                var gridPos = grid.WorldMatrix.Translation;
+                if (Vector3D.Distance(gridPos, _spawningMatrix.Translation) > 500)
+                {
+                    Log.Warn("same id but different position");
+                    return;
+                }
 
                 _grid = grid;
                 _cleanupIgnored = false;
