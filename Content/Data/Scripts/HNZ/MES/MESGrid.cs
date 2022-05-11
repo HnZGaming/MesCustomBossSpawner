@@ -9,34 +9,44 @@ namespace HNZ.MES
 {
     public sealed class MESGrid
     {
+        public interface IIdentity
+        {
+            ModStorageEntry PrefabId { get; }
+            string InstanceId { get; }
+            string SpawnGroup { get; }
+            string FactionTag { get; }
+        }
+
         static readonly Logger Log = LoggerManager.Create(nameof(MESGrid));
         const float TimeoutSecs = 10;
 
         readonly MESApi _mesApi;
-        readonly ModStorageEntry _id;
+        readonly IIdentity _identity;
         IMyCubeGrid _grid;
-        string _spawnGroup;
         bool _cleanupIgnored;
         DateTime? _spawnedTime;
         bool _spawning;
         MatrixD _spawningMatrix;
 
-        public MESGrid(MESApi mesApi, ModStorageEntry id)
+        public MESGrid(MESApi mesApi, IIdentity identity)
         {
             _mesApi = mesApi;
-            _id = id;
+            _identity = identity;
         }
 
         public bool Closed => _grid == null;
-        public bool Compromised { get; private set; }
 
-        public bool TryInitialize(string spawnGroup, string factionTag, MatrixD matrix, bool ignoreSafetyCheck)
+        public bool TryInitialize(MatrixD matrix, bool ignoreSafetyCheck)
         {
-            Log.Info($"spawning: [{factionTag}] {spawnGroup} at {matrix}");
+            Log.Info($"spawning: {_identity} at {matrix}");
 
-            _spawnGroup = spawnGroup;
-
-            if (!_mesApi.CustomSpawnRequest(new List<string> { spawnGroup }, matrix, Vector3.Zero, ignoreSafetyCheck, factionTag, nameof(MesCustomBossSpawner)))
+            if (!_mesApi.CustomSpawnRequest(
+                    new List<string> { _identity.SpawnGroup },
+                    matrix,
+                    Vector3.Zero,
+                    ignoreSafetyCheck,
+                    _identity.FactionTag,
+                    nameof(MesCustomBossSpawner)))
             {
                 return false;
             }
@@ -52,11 +62,6 @@ namespace HNZ.MES
         {
             if (Closed) return;
 
-            if (_grid != null)
-            {
-                _grid.OnBlockOwnershipChanged -= OnBlockOwnershipChanged;
-            }
-
             _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
 
             _grid.OrNull()?.Close();
@@ -65,7 +70,7 @@ namespace HNZ.MES
             _spawning = false;
             _spawnedTime = null;
 
-            Log.Info($"closed grid: {_spawnGroup}");
+            Log.Info($"closed grid: {_identity.SpawnGroup}");
         }
 
         public void Update()
@@ -73,7 +78,7 @@ namespace HNZ.MES
             var timeout = _spawnedTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
             if (_spawning && _grid == null && timeout.HasValue && timeout.Value.TotalSeconds < 0)
             {
-                Log.Warn($"timeout: {_spawnGroup}, {_id}");
+                Log.Warn($"timeout: {_identity.SpawnGroup}, {_identity.PrefabId}");
                 Close();
                 return;
             }
@@ -93,16 +98,16 @@ namespace HNZ.MES
                 _cleanupIgnored = _mesApi.SetSpawnerIgnoreForDespawn(_grid, true);
                 if (_cleanupIgnored)
                 {
-                    Log.Info($"cleanup ignored: {_spawnGroup}");
+                    Log.Info($"cleanup ignored: {_identity.SpawnGroup}");
                 }
             }
         }
 
         void OnMesAnySuccessfulSpawn(IMyCubeGrid grid)
         {
-            if (_id.TestPresence(grid.Storage))
+            if (_identity.PrefabId.TestPresence(grid.Storage))
             {
-                Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}; id: {_id}");
+                Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_identity.SpawnGroup}; id: {_identity.PrefabId}");
 
                 var gridPos = grid.WorldMatrix.Translation;
                 if (Vector3D.Distance(gridPos, _spawningMatrix.Translation) > 500)
@@ -116,15 +121,7 @@ namespace HNZ.MES
 
                 _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
                 _mesApi.RegisterDespawnWatcher(_grid, OnBossDispawned);
-
-                grid.OnBlockOwnershipChanged += OnBlockOwnershipChanged;
             }
-        }
-
-        void OnBlockOwnershipChanged(IMyCubeGrid _)
-        {
-            //Log.Info($"compromised: {_grid.DisplayName}");
-            Compromised = true;
         }
 
         void OnBossDispawned(IMyCubeGrid grid, string type)

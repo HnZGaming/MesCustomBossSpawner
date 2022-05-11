@@ -114,8 +114,8 @@ namespace HNZ.MesCustomBossSpawner
                 }
             }
 
-            _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
-            if (!_bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, _spawningMatrix, true))
+            _bossGrid = new MESGrid(_mesApi, _bossInfo);
+            if (!_bossGrid.TryInitialize(_spawningMatrix, true))
             {
                 return false;
             }

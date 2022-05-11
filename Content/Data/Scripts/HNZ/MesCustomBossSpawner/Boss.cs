@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Xml.Serialization;
+using HNZ.MES;
 using HNZ.Utils;
 
 namespace HNZ.MesCustomBossSpawner
 {
-    public sealed class Boss
+    public sealed class Boss : MESGrid.IIdentity
     {
         [XmlElement]
         public string Id;
@@ -41,6 +42,11 @@ namespace HNZ.MesCustomBossSpawner
 
         [XmlArray]
         public Schedule[] Schedules;
+
+        ModStorageEntry MESGrid.IIdentity.PrefabId => ModStorageId;
+        string MESGrid.IIdentity.InstanceId => Id;
+        string MESGrid.IIdentity.SpawnGroup => SpawnGroup;
+        string MESGrid.IIdentity.FactionTag => FactionTag;
 
         public void TryInitialize()
         {
