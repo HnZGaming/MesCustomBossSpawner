@@ -3,6 +3,7 @@ using HNZ.FlashGps.Interface;
 using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -98,7 +99,7 @@ namespace HNZ.MesCustomBossSpawner
 
             if (!(_bossGrid?.Closed ?? true))
             {
-                Log.Info($"aborted spawning; already spawned: {_bossInfo.SpawnGroup}");
+                Log.Info($"aborted spawning; already spawned: {_bossInfo.Id}");
                 return false;
             }
 
@@ -109,15 +110,24 @@ namespace HNZ.MesCustomBossSpawner
             {
                 if (!TrySetRandomPosition())
                 {
-                    Log.Warn($"failed spawning; no space: {_bossInfo.SpawnGroup}");
+                    Log.Warn($"failed spawning; no space: {_bossInfo.Id}");
                     return false;
                 }
             }
 
-            _bossGrid = new MESGrid(_mesApi, _bossInfo.ModStorageId);
-            if (!_bossGrid.TryInitialize(_bossInfo.SpawnGroup, _bossInfo.FactionTag, _spawningMatrix, true))
+            IMyCubeGrid existingBossGrid;
+            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, _bossInfo.SpawnSphere, out existingBossGrid))
             {
-                return false;
+                Log.Info($"aborted spawning; already spawned. tracking: {_bossInfo.Id}");
+                _bossGrid = new MESGrid(_mesApi, _bossInfo, existingBossGrid);
+            }
+            else
+            {
+                _bossGrid = new MESGrid(_mesApi, _bossInfo);
+                if (!_bossGrid.TryInitialize(_spawningMatrix, true))
+                {
+                    return false;
+                }
             }
 
             // reset so the next "spawn" attempt will generate a new matrix
@@ -134,7 +144,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void TryCleanup(float cleanupRange = 0f)
         {
-            _bossGrid?.TryCharacterDistanceCleanup(cleanupRange);
+            _bossGrid?.CleanUpIfFarFromCharacters(cleanupRange);
         }
 
         public void ResetSpawningPosition()
