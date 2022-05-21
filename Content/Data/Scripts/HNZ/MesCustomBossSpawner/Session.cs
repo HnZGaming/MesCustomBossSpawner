@@ -30,6 +30,7 @@ namespace HNZ.MesCustomBossSpawner
             _serverCommands = new Dictionary<string, Action<Command>>
             {
                 { "reload", Command_Reload },
+                { "enabled", Command_Enabled },
                 { "spawn", Command_Spawn },
                 { "despawn", Command_Despawn },
                 { "reset", Command_ResetPosition },
@@ -133,6 +134,26 @@ namespace HNZ.MesCustomBossSpawner
         {
             ReloadConfig();
             command.Respond("CBS", Color.White, "config reloaded");
+        }
+
+        void Command_Enabled(Command command)
+        {
+            string arg;
+            if (!command.Arguments.TryGetFirstValue(out arg))
+            {
+                command.Respond("CBS", Color.Red, "no arg");
+                return;
+            }
+
+            bool enabled;
+            if (!bool.TryParse(arg, out enabled))
+            {
+                command.Respond("CBS", Color.Red, "invalid arg");
+                return;
+            }
+
+            Config.Instance.Enabled = enabled;
+            command.Respond("CBS", Color.White, $"spawning enabled: {enabled}");
         }
 
         void Command_Spawn(Command command)

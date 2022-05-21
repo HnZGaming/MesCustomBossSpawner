@@ -40,7 +40,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void Update()
         {
-            if (GameUtils.EverySeconds(1))
+            if (GameUtils.EverySeconds(1) && Config.Instance.Enabled)
             {
                 if (_scheduler.Update(DateTime.Now))
                 {
