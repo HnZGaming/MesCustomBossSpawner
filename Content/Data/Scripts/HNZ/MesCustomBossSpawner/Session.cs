@@ -7,6 +7,7 @@ using HNZ.Utils.Communications;
 using HNZ.Utils.Logging;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -24,6 +25,8 @@ namespace HNZ.MesCustomBossSpawner
         CommandModule _commandModule;
         MESApi _mesApi;
         FlashGpsApi _localGpsApi;
+        SceneEntityCachedCollection<IMyCubeGrid> _grids;
+        bool _runOnce;
 
         public Session()
         {
@@ -37,6 +40,7 @@ namespace HNZ.MesCustomBossSpawner
             };
 
             _bossSpawners = new Dictionary<string, BossSpawner>();
+            _grids = new SceneEntityCachedCollection<IMyCubeGrid>();
         }
 
         public override void LoadData()
@@ -57,6 +61,7 @@ namespace HNZ.MesCustomBossSpawner
             _localGpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
 
             PlanetCollection.Initialize();
+            _grids.Initialize();
 
             ReloadConfig();
         }
@@ -74,6 +79,7 @@ namespace HNZ.MesCustomBossSpawner
             }
 
             PlanetCollection.Close();
+            _grids.Close();
         }
 
         public override void UpdateBeforeSimulation()
@@ -82,6 +88,20 @@ namespace HNZ.MesCustomBossSpawner
             _commandModule.Update();
 
             if (!MyAPIGateway.Session.IsServer) return;
+
+            // load existing boss grids
+            if (!_runOnce)
+            {
+                _runOnce = true;
+
+                var grids = _grids.ApplyChanges();
+                foreach (var bossSpawner in _bossSpawners)
+                {
+                    bossSpawner.Value.SearchExistingGrid(grids);
+                }
+
+                _grids.Close();
+            }
 
             foreach (var bossSpawner in _bossSpawners)
             {

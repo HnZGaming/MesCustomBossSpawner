@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using HNZ.FlashGps.Interface;
 using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
+using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -36,6 +39,16 @@ namespace HNZ.MesCustomBossSpawner
         public void Close()
         {
             _bossGrid?.Close();
+        }
+
+        public void SearchExistingGrid(IEnumerable<IMyEntity> existingGrids)
+        {
+            IMyCubeGrid existingBossGrid;
+            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, existingGrids, out existingBossGrid))
+            {
+                Log.Info($"found existing boss grid: {_bossInfo.Id}");
+                _bossGrid = new MESGrid(_mesApi, _bossInfo, existingBossGrid);
+            }
         }
 
         public void Update()
@@ -115,8 +128,10 @@ namespace HNZ.MesCustomBossSpawner
                 }
             }
 
+            var searchSphere = (BoundingSphereD)_bossInfo.SpawnSphere;
+            var entities = MyEntities.GetTopMostEntitiesInSphere(ref searchSphere).ToArray();
             IMyCubeGrid existingBossGrid;
-            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, _bossInfo.SpawnSphere, out existingBossGrid))
+            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, entities, out existingBossGrid))
             {
                 Log.Info($"aborted spawning; already spawned. tracking: {_bossInfo.Id}");
                 _bossGrid = new MESGrid(_mesApi, _bossInfo, existingBossGrid);

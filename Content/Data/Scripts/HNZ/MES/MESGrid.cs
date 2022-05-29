@@ -4,6 +4,7 @@ using HNZ.Utils;
 using HNZ.Utils.Logging;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MES
@@ -168,11 +169,10 @@ namespace HNZ.MES
             }
         }
 
-        public static bool TrySearchExistingGrid(string instanceId, BoundingSphereD sphere, out IMyCubeGrid grid)
+        public static bool TrySearchExistingGrid(string instanceId, IEnumerable<IMyEntity> entities, out IMyCubeGrid grid)
         {
             try
             {
-                var entities = MyEntities.GetTopMostEntitiesInSphere(ref sphere).ToArray();
                 var storage = new ModStorageEntry(InstanceIdKey, instanceId);
                 foreach (var entity in entities)
                 {

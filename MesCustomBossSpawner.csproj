@@ -143,6 +143,8 @@
         <Compile Include="Content\Data\Scripts\HNZ\MES\MESGrid.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\CachedHashSet.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityCachedCollection.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\Command.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\Communications\CommandModule.cs" />
