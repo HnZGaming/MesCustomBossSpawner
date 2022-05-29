@@ -4,6 +4,7 @@ using HNZ.Utils;
 using HNZ.Utils.Logging;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MES
@@ -47,7 +48,7 @@ namespace HNZ.MES
 
         public bool TryInitialize(MatrixD spawnMatrix, bool ignoreSafetyCheck)
         {
-            Log.Info($"spawning: {_identity} at {spawnMatrix}");
+            Log.Info($"spawning: {_identity} at {spawnMatrix.Translation}");
 
             if (!_mesApi.CustomSpawnRequest(
                     new List<string> { _identity.SpawnGroup },
@@ -69,9 +70,7 @@ namespace HNZ.MES
 
         public void Close()
         {
-            if (Closed) return;
-
-            _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
+            var wasClosed = Closed;
 
             _grid.OrNull()?.Close();
             _grid = null;
@@ -79,13 +78,17 @@ namespace HNZ.MES
             _spawning = false;
             _spawnedTime = null;
 
-            Log.Info($"closed grid: {_identity.SpawnGroup}");
+            if (!wasClosed)
+            {
+                _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
+                Log.Info($"closed grid: {_identity.SpawnGroup}");
+            }
         }
 
         public void Update()
         {
             var timeout = _spawnedTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
-            if (_spawning && _grid == null && timeout.HasValue && timeout.Value.TotalSeconds < 0)
+            if (_spawning && _spawnedTime != null && _grid == null && timeout.HasValue && timeout.Value.TotalSeconds < 0)
             {
                 Log.Warn($"timeout: {_identity.SpawnGroup}, {_identity.PrefabId}");
                 Close();
@@ -166,11 +169,10 @@ namespace HNZ.MES
             }
         }
 
-        public static bool TrySearchExistingGrid(string instanceId, BoundingSphereD sphere, out IMyCubeGrid grid)
+        public static bool TrySearchExistingGrid(string instanceId, IEnumerable<IMyEntity> entities, out IMyCubeGrid grid)
         {
             try
             {
-                var entities = MyEntities.GetTopMostEntitiesInSphere(ref sphere).ToArray();
                 var storage = new ModStorageEntry(InstanceIdKey, instanceId);
                 foreach (var entity in entities)
                 {

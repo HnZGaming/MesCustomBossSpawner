@@ -7,6 +7,7 @@ using HNZ.Utils.Communications;
 using HNZ.Utils.Logging;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
+using VRage.Game.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -24,18 +25,22 @@ namespace HNZ.MesCustomBossSpawner
         CommandModule _commandModule;
         MESApi _mesApi;
         FlashGpsApi _localGpsApi;
+        SceneEntityCachedCollection<IMyCubeGrid> _grids;
+        bool _runOnce;
 
         public Session()
         {
             _serverCommands = new Dictionary<string, Action<Command>>
             {
                 { "reload", Command_Reload },
+                { "enabled", Command_Enabled },
                 { "spawn", Command_Spawn },
                 { "despawn", Command_Despawn },
                 { "reset", Command_ResetPosition },
             };
 
             _bossSpawners = new Dictionary<string, BossSpawner>();
+            _grids = new SceneEntityCachedCollection<IMyCubeGrid>();
         }
 
         public override void LoadData()
@@ -56,6 +61,7 @@ namespace HNZ.MesCustomBossSpawner
             _localGpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
 
             PlanetCollection.Initialize();
+            _grids.Initialize();
 
             ReloadConfig();
         }
@@ -73,6 +79,7 @@ namespace HNZ.MesCustomBossSpawner
             }
 
             PlanetCollection.Close();
+            _grids.Close();
         }
 
         public override void UpdateBeforeSimulation()
@@ -81,6 +88,20 @@ namespace HNZ.MesCustomBossSpawner
             _commandModule.Update();
 
             if (!MyAPIGateway.Session.IsServer) return;
+
+            // load existing boss grids
+            if (!_runOnce)
+            {
+                _runOnce = true;
+
+                var grids = _grids.ApplyChanges();
+                foreach (var bossSpawner in _bossSpawners)
+                {
+                    bossSpawner.Value.SearchExistingGrid(grids);
+                }
+
+                _grids.Close();
+            }
 
             foreach (var bossSpawner in _bossSpawners)
             {
@@ -133,6 +154,26 @@ namespace HNZ.MesCustomBossSpawner
         {
             ReloadConfig();
             command.Respond("CBS", Color.White, "config reloaded");
+        }
+
+        void Command_Enabled(Command command)
+        {
+            string arg;
+            if (!command.Arguments.TryGetFirstValue(out arg))
+            {
+                command.Respond("CBS", Color.Red, "no arg");
+                return;
+            }
+
+            bool enabled;
+            if (!bool.TryParse(arg, out enabled))
+            {
+                command.Respond("CBS", Color.Red, "invalid arg");
+                return;
+            }
+
+            Config.Instance.Enabled = enabled;
+            command.Respond("CBS", Color.White, $"spawning enabled: {enabled}");
         }
 
         void Command_Spawn(Command command)

@@ -59,6 +59,11 @@ namespace HNZ.MesCustomBossSpawner
             LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
         }
 
+        public override string ToString()
+        {
+            return $"{nameof(Id)}: {Id}, {nameof(SpawnGroup)}: {SpawnGroup}, {nameof(FactionTag)}: {FactionTag}, {nameof(ModStorageId)}: {ModStorageId}";
+        }
+
         public static Boss CreateDefault() => new Boss
         {
             Id = "Bababooey",

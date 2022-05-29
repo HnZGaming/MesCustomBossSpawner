@@ -11,6 +11,9 @@ namespace HNZ.MesCustomBossSpawner
     {
         public static Config Instance { get; set; }
 
+        [XmlElement]
+        public bool Enabled { get; set; }
+
         [XmlArray]
         public Boss[] Bosses;
 
@@ -22,6 +25,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void TryInitialize()
         {
+            Enabled = true;
             LangUtils.NullOrDefault(ref Bosses, Array.Empty<Boss>());
             LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
             LangUtils.NullOrDefault(ref SpawnVoids, Array.Empty<Sphere>());
@@ -34,6 +38,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public static Config CreateDefault() => new Config
         {
+            Enabled = true,
             Bosses = new[]
             {
                 Boss.CreateDefault()
