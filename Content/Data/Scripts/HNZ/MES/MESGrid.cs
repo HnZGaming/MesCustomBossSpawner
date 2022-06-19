@@ -2,60 +2,58 @@
 using System.Collections.Generic;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
-using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MES
 {
     public sealed class MESGrid
     {
-        public interface IIdentity
-        {
-            ModStorageEntry PrefabId { get; }
-            string InstanceId { get; }
-            string SpawnGroup { get; }
-            string FactionTag { get; }
-        }
-
         static readonly Logger Log = LoggerManager.Create(nameof(MESGrid));
-        static readonly Guid InstanceIdKey = Guid.Parse("6BFEA3E4-7B06-460C-ADD1-C1A66EB7B5E9");
+        static readonly Guid IdKey = Guid.Parse("6BFEA3E4-7B06-460C-ADD1-C1A66EB7B5E9");
         const float TimeoutSecs = 10;
 
         readonly MESApi _mesApi;
-        readonly IIdentity _identity;
-        readonly ModStorageEntry _storage;
+        readonly string _id;
+        readonly string _spawnGroup;
         IMyCubeGrid _grid;
         bool _cleanupIgnored;
         DateTime? _spawnedTime;
         bool _spawning;
         MatrixD _spawningMatrix;
 
-        public MESGrid(MESApi mesApi, IIdentity identity)
+        public MESGrid(MESApi mesApi, string id, string spawnGroup)
         {
             _mesApi = mesApi;
-            _identity = identity;
-            _storage = new ModStorageEntry(InstanceIdKey, identity.InstanceId);
+            _id = id;
+            _spawnGroup = spawnGroup;
         }
 
-        public MESGrid(MESApi mesApi, IIdentity identity, IMyCubeGrid grid) : this(mesApi, identity)
+        public static bool TryCreateFromExistingGrid(MESApi mesApi, string id, string spawnGroup, IMyCubeGrid existingGrid, out MESGrid grid)
         {
-            SetGrid(grid);
+            if (!TestIdentity(existingGrid, spawnGroup, id))
+            {
+                grid = null;
+                return false;
+            }
+
+            grid = new MESGrid(mesApi, id, spawnGroup);
+            grid.SetGrid(existingGrid);
+            return true;
         }
 
         public bool Closed => _grid == null;
 
         public bool TryInitialize(MatrixD spawnMatrix, bool ignoreSafetyCheck)
         {
-            Log.Info($"spawning: {_identity} at {spawnMatrix.Translation}");
+            Log.Info($"spawning: {_spawnGroup} at {spawnMatrix.Translation}");
 
             if (!_mesApi.CustomSpawnRequest(
-                    new List<string> { _identity.SpawnGroup },
+                    new List<string> { _spawnGroup },
                     spawnMatrix,
                     Vector3.Zero,
                     ignoreSafetyCheck,
-                    _identity.FactionTag,
+                    null,
                     nameof(MesCustomBossSpawner)))
             {
                 return false;
@@ -81,7 +79,7 @@ namespace HNZ.MES
             if (!wasClosed)
             {
                 _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, false);
-                Log.Info($"closed grid: {_identity.SpawnGroup}");
+                Log.Info($"closed grid: {_spawnGroup}");
             }
         }
 
@@ -90,7 +88,7 @@ namespace HNZ.MES
             var timeout = _spawnedTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
             if (_spawning && _spawnedTime != null && _grid == null && timeout.HasValue && timeout.Value.TotalSeconds < 0)
             {
-                Log.Warn($"timeout: {_identity.SpawnGroup}, {_identity.PrefabId}");
+                Log.Warn($"timeout: {_spawnGroup}");
                 Close();
                 return;
             }
@@ -110,40 +108,32 @@ namespace HNZ.MES
                 _cleanupIgnored = _mesApi.SetSpawnerIgnoreForDespawn(_grid, true);
                 if (_cleanupIgnored)
                 {
-                    Log.Info($"cleanup ignored: {_identity.SpawnGroup}");
+                    Log.Info($"cleanup ignored: {_spawnGroup}");
                 }
             }
         }
 
         void OnMesAnySuccessfulSpawn(IMyCubeGrid grid)
         {
-            // not mine: wrong id
-            if (!_identity.PrefabId.Test(grid.Storage)) return;
+            // not mine: wrong spawn group
+            if (!TestIdentity(grid, _spawnGroup)) return;
 
-            Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_identity.SpawnGroup}; id: {_identity.PrefabId}");
+            Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}");
 
             // not mine: wrong position
             var gridPos = grid.WorldMatrix.Translation;
             if (Vector3D.Distance(gridPos, _spawningMatrix.Translation) > 500)
             {
-                Log.Warn("same id but different position");
+                Log.Warn($"different position: {_spawnGroup}, {_id}");
                 return;
             }
 
+            grid.UpdateStorageValue(IdKey, _id);
             SetGrid(grid);
         }
 
         void SetGrid(IMyCubeGrid grid)
         {
-            string id;
-            if (grid.TryGetStorageValue(InstanceIdKey, out id) && id != _identity.InstanceId)
-            {
-                Log.Error($"wrong instance id: {_identity.InstanceId} -> {id}");
-                return;
-            }
-
-            grid.UpdateStorageValue(_storage.KeyGuid, _storage.Value);
-
             _grid = grid;
             _cleanupIgnored = false;
             _spawning = false;
@@ -169,32 +159,19 @@ namespace HNZ.MES
             }
         }
 
-        public static bool TrySearchExistingGrid(string instanceId, IEnumerable<IMyEntity> entities, out IMyCubeGrid grid)
+        static bool TestIdentity(IMyCubeGrid grid, string spawnGroup, string id = null)
         {
-            try
-            {
-                var storage = new ModStorageEntry(InstanceIdKey, instanceId);
-                foreach (var entity in entities)
-                {
-                    grid = entity as IMyCubeGrid;
-                    if (grid != null)
-                    {
-                        if (storage.Test(grid.Storage))
-                        {
-                            return true;
-                        }
-                    }
-                }
+            if (grid == null) return false;
+            if (!NpcData.TestSpawnGroup(grid, spawnGroup)) return false;
 
-                grid = null;
-                return false;
-            }
-            catch (Exception e) // when MyEntities fail to iterate
+            if (id != null)
             {
-                Log.Warn(e);
-                grid = null;
-                return false;
+                string existingId;
+                if (!grid.TryGetStorageValue(IdKey, out existingId)) return false;
+                if (existingId != id) return false;
             }
+
+            return true;
         }
     }
 }

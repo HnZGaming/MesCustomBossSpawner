@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Xml.Serialization;
-using HNZ.MES;
 using HNZ.Utils;
 
 namespace HNZ.MesCustomBossSpawner
 {
-    public sealed class Boss : MESGrid.IIdentity
+    public sealed class Boss
     {
         [XmlElement]
         public string Id;
@@ -15,12 +14,6 @@ namespace HNZ.MesCustomBossSpawner
 
         [XmlElement]
         public string SpawnGroup;
-
-        [XmlElement]
-        public string FactionTag;
-
-        [XmlElement]
-        public ModStorageEntry ModStorageId;
 
         [XmlElement]
         public bool PlanetSpawn;
@@ -43,16 +36,10 @@ namespace HNZ.MesCustomBossSpawner
         [XmlArray]
         public Schedule[] Schedules;
 
-        ModStorageEntry MESGrid.IIdentity.PrefabId => ModStorageId;
-        string MESGrid.IIdentity.InstanceId => Id;
-        string MESGrid.IIdentity.SpawnGroup => SpawnGroup;
-        string MESGrid.IIdentity.FactionTag => FactionTag;
-
         public void TryInitialize()
         {
             LangUtils.AssertNull(Id, nameof(Id));
             LangUtils.AssertNull(SpawnGroup, nameof(SpawnGroup));
-            LangUtils.AssertNull(ModStorageId, nameof(ModStorageId));
             LangUtils.NullOrDefault(ref SpawnSphere, new Sphere());
             LangUtils.NullOrDefault(ref CountdownGpsName, "");
             LangUtils.NullOrDefault(ref CountdownGpsDescription, "");
@@ -61,7 +48,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public override string ToString()
         {
-            return $"{nameof(Id)}: {Id}, {nameof(SpawnGroup)}: {SpawnGroup}, {nameof(FactionTag)}: {FactionTag}, {nameof(ModStorageId)}: {ModStorageId}";
+            return $"{nameof(Id)}: {Id}, {nameof(SpawnGroup)}: {SpawnGroup}";
         }
 
         public static Boss CreateDefault() => new Boss
@@ -69,11 +56,6 @@ namespace HNZ.MesCustomBossSpawner
             Id = "Bababooey",
             Enabled = true,
             SpawnGroup = "Porks-SpawnGroup-Boss-BigMekKrooza",
-            ModStorageId = new ModStorageEntry
-            {
-                Key = "b97e4f0d-6a55-4dcf-a471-448132e68e82",
-                Value = "Bababooey",
-            },
             PlanetSpawn = false,
             SpawnSphere = new Sphere
             {

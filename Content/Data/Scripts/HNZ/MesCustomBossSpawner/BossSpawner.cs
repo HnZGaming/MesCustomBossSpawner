@@ -6,7 +6,6 @@ using HNZ.Utils;
 using HNZ.Utils.Logging;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
-using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -41,13 +40,15 @@ namespace HNZ.MesCustomBossSpawner
             _bossGrid?.Close();
         }
 
-        public void SearchExistingGrid(IEnumerable<IMyEntity> existingGrids)
+        public void SearchExistingGrid(IEnumerable<IMyCubeGrid> existingGrids)
         {
-            IMyCubeGrid existingBossGrid;
-            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, existingGrids, out existingBossGrid))
+            foreach (var existingGrid in existingGrids)
             {
-                Log.Info($"found existing boss grid: {_bossInfo.Id}");
-                _bossGrid = new MESGrid(_mesApi, _bossInfo, existingBossGrid);
+                if (MESGrid.TryCreateFromExistingGrid(_mesApi, _bossInfo.Id, _bossInfo.SpawnGroup, existingGrid, out _bossGrid))
+                {
+                    Log.Info($"found existing boss grid: {_bossInfo.Id}");
+                    break;
+                }
             }
         }
 
@@ -78,28 +79,22 @@ namespace HNZ.MesCustomBossSpawner
                 var bossGridClosed = _bossGrid?.Closed ?? true;
                 var countdownStarted = _scheduler.Countdown != null;
                 Log.Debug($"every second; {_bossInfo.Id}: {bossEnabled}, {bossGridClosed}, {countdownStarted}");
+                if (!bossEnabled || !bossGridClosed || !countdownStarted) return;
 
-                if (bossEnabled && bossGridClosed && countdownStarted)
+                var gps = new FlashGpsSource
                 {
-                    var gps = new FlashGpsSource
-                    {
-                        Id = _gpsId,
-                        Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
-                        Description = _bossInfo.CountdownGpsDescription,
-                        Position = _spawningMatrix.Translation,
-                        DecaySeconds = 2,
-                        Color = Color.Orange,
-                        Radius = _bossInfo.GpsRadius,
-                    };
+                    Id = _gpsId,
+                    Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
+                    Description = _bossInfo.CountdownGpsDescription,
+                    Position = _spawningMatrix.Translation,
+                    DecaySeconds = 5,
+                    Color = Color.Orange,
+                    Radius = _bossInfo.GpsRadius,
+                };
 
-                    _gpsApi.AddOrUpdate(gps);
+                _gpsApi.AddOrUpdate(gps);
 
-                    Log.Debug($"countdown gps sending: {gps.Name}");
-                }
-                else
-                {
-                    _gpsApi.Remove(_gpsId);
-                }
+                Log.Debug($"countdown gps sending: {gps.Name}");
             }
         }
 
@@ -130,15 +125,23 @@ namespace HNZ.MesCustomBossSpawner
 
             var searchSphere = (BoundingSphereD)_bossInfo.SpawnSphere;
             var entities = MyEntities.GetTopMostEntitiesInSphere(ref searchSphere).ToArray();
-            IMyCubeGrid existingBossGrid;
-            if (MESGrid.TrySearchExistingGrid(_bossInfo.Id, entities, out existingBossGrid))
+            var found = false;
+            foreach (var entity in entities)
             {
-                Log.Info($"aborted spawning; already spawned. tracking: {_bossInfo.Id}");
-                _bossGrid = new MESGrid(_mesApi, _bossInfo, existingBossGrid);
+                var grid = entity as IMyCubeGrid;
+                if (grid == null) continue;
+
+                if (MESGrid.TryCreateFromExistingGrid(_mesApi, _bossInfo.Id, _bossInfo.SpawnGroup, grid, out _bossGrid))
+                {
+                    Log.Info($"aborted spawning; already spawned. tracking: {_bossInfo.Id}");
+                    found = true;
+                    break;
+                }
             }
-            else
+
+            if (!found)
             {
-                _bossGrid = new MESGrid(_mesApi, _bossInfo);
+                _bossGrid = new MESGrid(_mesApi, _bossInfo.Id, _bossInfo.SpawnGroup);
                 if (!_bossGrid.TryInitialize(_spawningMatrix, true))
                 {
                     return false;
