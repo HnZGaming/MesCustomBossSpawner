@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using HNZ.FlashGps.Interface;
-using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
+using HNZ.Utils.MES;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
 using VRageMath;

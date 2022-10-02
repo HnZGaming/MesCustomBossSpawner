@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using HNZ.FlashGps.Interface;
-using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Communications;
 using HNZ.Utils.Logging;
+using HNZ.Utils.MES;
 using Sandbox.ModAPI;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
