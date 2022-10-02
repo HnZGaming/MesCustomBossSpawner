@@ -142,7 +142,7 @@ namespace HNZ.MesCustomBossSpawner
             if (!found)
             {
                 _bossGrid = new MESGrid(_mesApi, _bossInfo.Id, _bossInfo.SpawnGroup);
-                if (!_bossGrid.TryInitialize(_spawningMatrix, true))
+                if (!_bossGrid.TryInitialize(_spawningMatrix, true, nameof(MesCustomBossSpawner)))
                 {
                     return false;
                 }
