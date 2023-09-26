@@ -74,5 +74,8 @@ namespace HNZ.FlashGps.Interface
         /// </summary>
         [ProtoMember(11, IsRequired = false)]
         public ulong[] TargetPlayers { get; set; } // null -> everyone
+        
+        [ProtoMember(12, IsRequired = false)]
+        public bool SuppressSound { get; set; }
     }
 }

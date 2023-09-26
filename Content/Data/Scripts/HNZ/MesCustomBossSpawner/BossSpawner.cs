@@ -90,6 +90,7 @@ namespace HNZ.MesCustomBossSpawner
                     DecaySeconds = 5,
                     Color = Color.Orange,
                     Radius = _bossInfo.GpsRadius,
+                    SuppressSound = true,
                 };
 
                 _gpsApi.AddOrUpdate(gps);
