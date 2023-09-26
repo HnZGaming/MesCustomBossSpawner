@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using HNZ.FlashGps.Interface;
-using HNZ.MES;
 using HNZ.Utils;
 using HNZ.Utils.Logging;
+using HNZ.Utils.MES;
 using Sandbox.Game.Entities;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -90,6 +90,7 @@ namespace HNZ.MesCustomBossSpawner
                     DecaySeconds = 5,
                     Color = Color.Orange,
                     Radius = _bossInfo.GpsRadius,
+                    SuppressSound = true,
                 };
 
                 _gpsApi.AddOrUpdate(gps);
@@ -142,7 +143,7 @@ namespace HNZ.MesCustomBossSpawner
             if (!found)
             {
                 _bossGrid = new MESGrid(_mesApi, _bossInfo.Id, _bossInfo.SpawnGroup);
-                if (!_bossGrid.TryInitialize(_spawningMatrix, true))
+                if (!_bossGrid.TryInitialize(_spawningMatrix, true, nameof(MesCustomBossSpawner)))
                 {
                     return false;
                 }
