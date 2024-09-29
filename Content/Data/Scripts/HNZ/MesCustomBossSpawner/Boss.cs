@@ -1,81 +1,57 @@
-﻿using System;
-using System.Xml.Serialization;
-using HNZ.Utils;
+﻿using System.Collections.Generic;
+using HNZ.FlashGps.Interface;
+using HNZ.Utils.MES;
+using VRage.Game.ModAPI;
 
 namespace HNZ.MesCustomBossSpawner
 {
     public sealed class Boss
     {
-        [XmlElement]
-        public string Id;
+        readonly MESApi _mesApi;
+        readonly FlashGpsApi _gpsApi;
+        readonly BossInfo _info;
+        BossGrid _grid;
 
-        [XmlElement]
-        public bool Enabled;
-
-        [XmlElement]
-        public string SpawnGroup;
-
-        [XmlElement]
-        public bool PlanetSpawn;
-
-        [XmlElement]
-        public string CountdownGpsName;
-
-        [XmlElement]
-        public string CountdownGpsDescription;
-
-        [XmlElement]
-        public Sphere SpawnSphere;
-
-        [XmlElement]
-        public float ClearanceRadius;
-
-        [XmlElement]
-        public float GpsRadius;
-
-        [XmlArray]
-        public Schedule[] Schedules;
-
-        public void TryInitialize()
+        public Boss(MESApi mesApi, FlashGpsApi gpsApi, BossInfo info)
         {
-            LangUtils.AssertNull(Id, nameof(Id));
-            LangUtils.AssertNull(SpawnGroup, nameof(SpawnGroup));
-            LangUtils.NullOrDefault(ref SpawnSphere, new Sphere());
-            LangUtils.NullOrDefault(ref CountdownGpsName, "");
-            LangUtils.NullOrDefault(ref CountdownGpsDescription, "");
-            LangUtils.NullOrDefault(ref Schedules, Array.Empty<Schedule>());
+            _mesApi = mesApi;
+            _gpsApi = gpsApi;
+            _info = info;
         }
 
-        public override string ToString()
+        public void Initialize()
         {
-            return $"{nameof(Id)}: {Id}, {nameof(SpawnGroup)}: {SpawnGroup}";
+            _grid = new BossGrid(_mesApi, _gpsApi, _info);
+            _grid.Initialize();
         }
 
-        public static Boss CreateDefault() => new Boss
+        public void Close()
         {
-            Id = "Bababooey",
-            Enabled = true,
-            SpawnGroup = "Porks-SpawnGroup-Boss-BigMekKrooza",
-            PlanetSpawn = false,
-            SpawnSphere = new Sphere
+            _grid.Close();
+        }
+
+        public void OnFirstFrame(IEnumerable<IMyCubeGrid> grids)
+        {
+            _grid.TryInitializeWithSceneGrid(grids);
+        }
+
+        public void Update()
+        {
+            _grid.Update();
+            if (_grid.Closed)
             {
-                X = 0,
-                Y = 0,
-                Z = 0,
-                Radius = 2000000,
-            },
-            ClearanceRadius = 1000,
-            GpsRadius = 500000,
-            CountdownGpsName = "Spawning in {0}",
-            CountdownGpsDescription = "Spawning very soon",
-            Schedules = new[]
-            {
-                new Schedule
-                {
-                    OffsetHours = 0,
-                    IntervalHours = 0.01f,
-                },
-            },
-        };
+                Initialize();
+            }
+        }
+
+        public bool TrySpawn()
+        {
+            return _grid.TrySpawn();
+        }
+
+        public void ResetSpawningPosition()
+        {
+            _grid.ResetSpawningPosition();
+        }
     }
 }

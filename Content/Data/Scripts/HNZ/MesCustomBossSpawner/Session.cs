@@ -13,19 +13,20 @@ using VRageMath;
 namespace HNZ.MesCustomBossSpawner
 {
     [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
+    // ReSharper disable once UnusedType.Global
     public sealed class Session : MySessionComponentBase, ICommandListener
     {
         static readonly Logger Log = LoggerManager.Create(nameof(Session));
 
         readonly Dictionary<string, Action<Command>> _serverCommands;
-        readonly Dictionary<string, BossSpawner> _bossSpawners;
+        readonly Dictionary<string, Boss> _bosses;
+        readonly SceneEntityCachedCollection<IMyCubeGrid> _grids;
 
         ContentFile<Config> _configFile;
         ProtobufModule _protobufModule;
         CommandModule _commandModule;
         MESApi _mesApi;
-        FlashGpsApi _localGpsApi;
-        SceneEntityCachedCollection<IMyCubeGrid> _grids;
+        FlashGpsApi _gpsApi;
         bool _runOnce;
 
         public Session()
@@ -39,7 +40,7 @@ namespace HNZ.MesCustomBossSpawner
                 { "reset", Command_ResetPosition },
             };
 
-            _bossSpawners = new Dictionary<string, BossSpawner>();
+            _bosses = new Dictionary<string, Boss>();
             _grids = new SceneEntityCachedCollection<IMyCubeGrid>();
         }
 
@@ -55,15 +56,16 @@ namespace HNZ.MesCustomBossSpawner
             _commandModule = new CommandModule(_protobufModule, 1, "cbs", this);
             _commandModule.Initialize();
 
-            if (!MyAPIGateway.Session.IsServer) return;
+            if (MyAPIGateway.Session.IsServer)
+            {
+                _mesApi = new MESApi();
+                _gpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
 
-            _mesApi = new MESApi();
-            _localGpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
+                PlanetCollection.Initialize();
+                _grids.Initialize();
 
-            PlanetCollection.Initialize();
-            _grids.Initialize();
-
-            ReloadConfig();
+                ReloadConfig();
+            }
         }
 
         protected override void UnloadData()
@@ -73,9 +75,9 @@ namespace HNZ.MesCustomBossSpawner
 
             if (!MyAPIGateway.Session.IsServer) return;
 
-            foreach (var bossSpawner in _bossSpawners)
+            foreach (var boss in _bosses.Values)
             {
-                bossSpawner.Value.Close();
+                boss.Close();
             }
 
             PlanetCollection.Close();
@@ -95,42 +97,43 @@ namespace HNZ.MesCustomBossSpawner
                 _runOnce = true;
 
                 var grids = _grids.ApplyChanges();
-                foreach (var bossSpawner in _bossSpawners)
+                foreach (var boss in _bosses.Values)
                 {
-                    bossSpawner.Value.SearchExistingGrid(grids);
+                    boss.OnFirstFrame(grids);
                 }
 
                 _grids.Close();
             }
 
-            foreach (var bossSpawner in _bossSpawners)
+            foreach (var kvp in _bosses)
             {
-                bossSpawner.Value.Update();
+                kvp.Value.Update();
             }
         }
 
         void ReloadConfig()
         {
+            Log.Info("Reloading config");
+
             _configFile = new ContentFile<Config>("CustomBossSpawner.cfg", Config.CreateDefault());
             _configFile.ReadOrCreateFile();
             Config.Instance = _configFile.Content;
             Config.Instance.TryInitialize();
-            _configFile.WriteFile(); // fills missing fields
+            _configFile.WriteFile(); // fill missing fields
             LoggerManager.SetConfigs(Config.Instance.Logs);
 
-            foreach (var bossSpawner in _bossSpawners)
+            foreach (var bossGrid in _bosses.Values)
             {
-                bossSpawner.Value.TryCleanup();
-                bossSpawner.Value.Close();
+                bossGrid.Close();
             }
 
-            _bossSpawners.Clear();
+            _bosses.Clear();
 
-            foreach (var boss in Config.Instance.Bosses)
+            foreach (var bossInfo in Config.Instance.Bosses)
             {
-                var bossSpawner = new BossSpawner(_mesApi, _localGpsApi, boss);
-                bossSpawner.Initialize();
-                _bossSpawners.Add(boss.Id, bossSpawner);
+                var boss = new Boss(_mesApi, _gpsApi, bossInfo);
+                boss.Initialize();
+                _bosses.Add(bossInfo.Id, boss);
             }
         }
 
@@ -179,11 +182,11 @@ namespace HNZ.MesCustomBossSpawner
         void Command_Spawn(Command command)
         {
             string id;
-            BossSpawner bossSpawner;
+            Boss boss;
             if (command.Arguments.TryGetFirstValue(out id) &&
-                _bossSpawners.TryGetValue(id, out bossSpawner))
+                _bosses.TryGetValue(id, out boss))
             {
-                var result = bossSpawner.TrySpawn();
+                var result = boss.TrySpawn();
                 command.Respond("CBS", Color.White, $"spawn result: {result}");
             }
             else
@@ -195,11 +198,11 @@ namespace HNZ.MesCustomBossSpawner
         void Command_Despawn(Command command)
         {
             string id;
-            BossSpawner bossSpawner;
+            Boss boss;
             if (command.Arguments.TryGetFirstValue(out id) &&
-                _bossSpawners.TryGetValue(id, out bossSpawner))
+                _bosses.TryGetValue(id, out boss))
             {
-                bossSpawner.TryCleanup();
+                boss.Close();
                 command.Respond("CBS", Color.White, "despawn command");
             }
             else
@@ -210,9 +213,9 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_ResetPosition(Command command)
         {
-            foreach (var p in _bossSpawners)
+            foreach (var boss in _bosses.Values)
             {
-                p.Value.ResetSpawningPosition();
+                boss.ResetSpawningPosition();
             }
 
             command.Respond("CBS", Color.White, "position reset");
