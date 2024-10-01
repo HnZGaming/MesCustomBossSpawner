@@ -134,8 +134,10 @@
         <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSerialization.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSource.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Boss.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossInfo.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossSpawner.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossGrid.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\MesSpawner.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Schedule.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Scheduler.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Session.cs" />
@@ -143,7 +145,6 @@
         <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CachedHashSet.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\MES\MESApi.cs" />
-        <Compile Include="Content\Data\Scripts\HNZ\Utils\MES\MESGrid.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\MES\NpcData.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\SceneEntityCachedCollection.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CharacterToPlayerLookup.cs" />
