@@ -155,12 +155,24 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_Reload(Command command)
         {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
             ReloadConfig();
             command.Respond("CBS", Color.White, "config reloaded");
         }
 
         void Command_Enabled(Command command)
         {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
             string arg;
             if (!command.Arguments.TryGetFirstValue(out arg))
             {
@@ -181,6 +193,12 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_Spawn(Command command)
         {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
             string id;
             Boss boss;
             if (command.Arguments.TryGetFirstValue(out id) &&
@@ -197,6 +215,12 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_Despawn(Command command)
         {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
             string id;
             Boss boss;
             if (command.Arguments.TryGetFirstValue(out id) &&
@@ -213,6 +237,12 @@ namespace HNZ.MesCustomBossSpawner
 
         void Command_ResetPosition(Command command)
         {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
             foreach (var boss in _bosses.Values)
             {
                 boss.ResetSpawningPosition();
