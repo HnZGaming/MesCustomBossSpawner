@@ -197,6 +197,7 @@ namespace HNZ.MesCustomBossSpawner
         void OnGridSet()
         {
             _coreBlock = Grid.GetFatBlocks<IMyRemoteControl>().FirstOrDefault();
+            Grid.DisplayName = $"[BOSS] {_bossInfo.Id}";
             Log.Info($"boss remote control found?: {_coreBlock != null}");
         }
 
