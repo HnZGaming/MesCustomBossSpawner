@@ -7,9 +7,9 @@ using HNZ.Utils.Logging;
 using HNZ.Utils.MES;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI;
+using VRage.ModAPI;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -24,6 +24,7 @@ namespace HNZ.MesCustomBossSpawner
         readonly MesSpawner _spawner;
         IMyRemoteControl _coreBlock;
         MatrixD? _spawnPosition;
+        int _originalBlockCount;
 
         public BossGrid(MESApi mesApi, FlashGpsApi flashGpsApi, BossInfo bossInfo)
         {
@@ -66,7 +67,7 @@ namespace HNZ.MesCustomBossSpawner
                     Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
                 }
 
-                if (Grid != null && IsAbandoned(Grid))
+                if (Grid != null && IsAbandoned())
                 {
                     Log.Info($"Closing boss abandoned: {_bossInfo.Id}");
                     Close();
@@ -197,29 +198,23 @@ namespace HNZ.MesCustomBossSpawner
         void OnGridSet()
         {
             _coreBlock = Grid.GetFatBlocks<IMyRemoteControl>().FirstOrDefault();
+            Log.Debug($"{_bossInfo.Id} boss remote control found?: {_coreBlock != null}");
+
             Grid.DisplayName = $"[BOSS] {_bossInfo.Id}";
-            Log.Info($"boss remote control found?: {_coreBlock != null}");
+
+            _originalBlockCount = ((MyCubeGrid)Grid).BlocksCount;
+            Log.Debug($"{_bossInfo.Id} original block count: {_originalBlockCount}");
         }
 
-        static bool IsAbandoned(IMyCubeGrid grid)
+        bool IsAbandoned()
         {
-            // has power -> not abandoned
-            if (grid.ResourceDistributor.ResourceState != MyResourceStateEnum.NoPower) return false;
+            var blocksCount = ((MyCubeGrid)Grid).BlocksCount;
+            Log.Debug($"{_bossInfo.Id} block count: {blocksCount}");
+            if (blocksCount >= _originalBlockCount) return false;
 
-            var sphere = new BoundingSphereD(grid.GetPosition(), Config.Instance.AbandonRange);
-            var entities = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, entities, MyEntityQueryType.Both);
-            foreach (var entity in entities)
-            {
-                // has "floating" characters nearby -> not abandoned
-                if (entity is IMyCharacter) return false;
-
-                var g = entity as MyCubeGrid;
-                if (g == null) continue;
-                
-                // has "seated" characters nearby -> not abandoned
-                if (g.OccupiedBlocks.Count > 0) return false;
-            }
+            var hasPlayersNearby = HasPlayersNearby(Grid, Config.Instance.AbandonRange);
+            Log.Debug($"{_bossInfo.Id} has players nearby: {hasPlayersNearby} in {Config.Instance.AbandonRange}");
+            if (hasPlayersNearby) return false;
 
             return true;
         }
@@ -279,6 +274,26 @@ namespace HNZ.MesCustomBossSpawner
             }
 
             return null;
+        }
+
+        static bool HasPlayersNearby(IMyEntity target, double range)
+        {
+            var sphere = new BoundingSphereD(target.GetPosition(), range);
+            var entities = new List<MyEntity>();
+            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, entities, MyEntityQueryType.Both);
+            foreach (var entity in entities)
+            {
+                // has "floating" characters nearby
+                if (entity is IMyCharacter) return true;
+
+                var g = entity as MyCubeGrid;
+                if (g == null) continue;
+
+                // has "seated" characters nearby
+                if (g.OccupiedBlocks.Count > 0) return true;
+            }
+
+            return false;
         }
     }
 }
