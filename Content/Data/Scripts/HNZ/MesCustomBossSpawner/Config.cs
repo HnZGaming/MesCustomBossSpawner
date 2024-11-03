@@ -17,6 +17,9 @@ namespace HNZ.MesCustomBossSpawner
         [XmlElement]
         public int AbandonRange { get; set; } = 20000;
 
+        [XmlElement]
+        public int AbandonCountdown { get; set; } = 300;
+
         [XmlArrayItem("Boss")]
         public BossInfo[] Bosses;
 

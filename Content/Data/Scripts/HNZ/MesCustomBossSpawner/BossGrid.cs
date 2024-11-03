@@ -25,6 +25,7 @@ namespace HNZ.MesCustomBossSpawner
         IMyRemoteControl _coreBlock;
         MatrixD? _spawnPosition;
         int _originalBlockCount;
+        DateTime? _abandonStartTime;
 
         public BossGrid(MESApi mesApi, FlashGpsApi flashGpsApi, BossInfo bossInfo)
         {
@@ -42,11 +43,14 @@ namespace HNZ.MesCustomBossSpawner
         {
             _scheduler.Initialize(DateTime.Now);
             _spawner.OnGridSet += OnGridSet;
+            _abandonStartTime = null;
         }
 
-        public void Close()
+        public void Close(string reason)
         {
             if (Closed) return;
+            
+            Log.Info($"closing boss: {_bossInfo.Id}; reason: {reason}");
 
             Closed = true;
             Grid.OrNull()?.Close();
@@ -66,18 +70,28 @@ namespace HNZ.MesCustomBossSpawner
                     var result = TrySpawn();
                     Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
                 }
-
-                if (Grid != null && IsAbandoned())
+                
+                var isAbandoned = Grid != null && IsAbandoned();
+                if (!isAbandoned)
+                {
+                    _abandonStartTime = null;
+                }
+                else if (_abandonStartTime == null)
+                {
+                    Log.Info($"Boss abandoned: {_bossInfo.Id}");
+                    _abandonStartTime = DateTime.UtcNow;
+                }
+                else if ((DateTime.UtcNow - _abandonStartTime)?.TotalSeconds > Config.Instance.AbandonCountdown)
                 {
                     Log.Info($"Closing boss abandoned: {_bossInfo.Id}");
-                    Close();
+                    Close("Abandoned");
                 }
             }
 
             if (_spawner.State == MesSpawner.SpawningState.Success && _spawner.SpawnedGrid.OrNull() == null)
             {
                 Log.Warn("grid deleted by someone else");
-                Close();
+                Close("Deleted externally");
                 return;
             }
 

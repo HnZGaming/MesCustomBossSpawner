@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using HNZ.FlashGps.Interface;
 using HNZ.Utils;
 using HNZ.Utils.Communications;
@@ -77,7 +78,7 @@ namespace HNZ.MesCustomBossSpawner
 
             foreach (var boss in _bosses.Values)
             {
-                boss.Close();
+                boss.Close("UnloadData");
             }
 
             PlanetCollection.Close();
@@ -124,7 +125,7 @@ namespace HNZ.MesCustomBossSpawner
 
             foreach (var bossGrid in _bosses.Values)
             {
-                bossGrid.Close();
+                bossGrid.Close("ReloadConfig");
             }
 
             _bosses.Clear();
@@ -162,7 +163,7 @@ namespace HNZ.MesCustomBossSpawner
             }
 
             ReloadConfig();
-            command.Respond("CBS", Color.White, "config reloaded");
+            command.Respond("CBS", Color.White, $"config reloaded; entries: {Config.Instance.Bosses.Select(b => b.Id).SeqToString()}");
         }
 
         void Command_Enabled(Command command)
@@ -226,7 +227,7 @@ namespace HNZ.MesCustomBossSpawner
             if (command.Arguments.TryGetFirstValue(out id) &&
                 _bosses.TryGetValue(id, out boss))
             {
-                boss.Close();
+                boss.Close("Command_Despawn");
                 command.Respond("CBS", Color.White, "despawn command");
             }
             else
