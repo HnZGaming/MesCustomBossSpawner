@@ -25,9 +25,9 @@ namespace HNZ.MesCustomBossSpawner
             _grid.Initialize();
         }
 
-        public void Close()
+        public void Close(string reason)
         {
-            _grid.Close();
+            _grid.Close(reason);
         }
 
         public void OnFirstFrame(IEnumerable<IMyCubeGrid> grids)
