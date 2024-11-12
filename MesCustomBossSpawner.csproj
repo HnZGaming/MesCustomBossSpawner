@@ -138,9 +138,12 @@
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossGrid.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\MesSpawner.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossGpsChannel.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\NexusGpsClient.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Schedule.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Scheduler.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Session.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\Nexus\NexusAPI.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\AddRemoveObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\BoundaryObserver.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\Utils\CachedHashSet.cs" />

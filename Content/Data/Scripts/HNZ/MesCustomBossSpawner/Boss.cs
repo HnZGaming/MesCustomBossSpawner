@@ -8,11 +8,11 @@ namespace HNZ.MesCustomBossSpawner
     public sealed class Boss
     {
         readonly MESApi _mesApi;
-        readonly FlashGpsApi _gpsApi;
+        readonly BossGpsChannel _gpsApi;
         readonly BossInfo _info;
         BossGrid _grid;
 
-        public Boss(MESApi mesApi, FlashGpsApi gpsApi, BossInfo info)
+        public Boss(MESApi mesApi, BossGpsChannel gpsApi, BossInfo info)
         {
             _mesApi = mesApi;
             _gpsApi = gpsApi;
