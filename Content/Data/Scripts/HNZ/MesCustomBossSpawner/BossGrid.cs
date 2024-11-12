@@ -19,7 +19,7 @@ namespace HNZ.MesCustomBossSpawner
         static readonly Logger Log = LoggerManager.Create(nameof(BossGrid));
         readonly BossInfo _bossInfo;
         readonly Scheduler _scheduler;
-        readonly FlashGpsApi _gpsApi;
+        readonly BossGpsChannel _gpsApi;
         readonly long _gpsId;
         readonly MesSpawner _spawner;
         IMyRemoteControl _coreBlock;
@@ -27,10 +27,10 @@ namespace HNZ.MesCustomBossSpawner
         int _originalBlockCount;
         DateTime? _abandonStartTime;
 
-        public BossGrid(MESApi mesApi, FlashGpsApi flashGpsApi, BossInfo bossInfo)
+        public BossGrid(MESApi mesApi, BossGpsChannel gpsApi, BossInfo bossInfo)
         {
             _bossInfo = bossInfo;
-            _gpsApi = flashGpsApi;
+            _gpsApi = gpsApi;
             _scheduler = new Scheduler(bossInfo.Schedules);
             _gpsId = bossInfo.Id.GetHashCode();
             _spawner = new MesSpawner(mesApi, bossInfo.SpawnGroup, bossInfo.Id);
@@ -49,7 +49,7 @@ namespace HNZ.MesCustomBossSpawner
         public void Close(string reason)
         {
             if (Closed) return;
-            
+
             Log.Info($"closing boss: {_bossInfo.Id}; reason: {reason}");
 
             Closed = true;
@@ -70,7 +70,7 @@ namespace HNZ.MesCustomBossSpawner
                     var result = TrySpawn();
                     Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
                 }
-                
+
                 var isAbandoned = Grid != null && IsAbandoned();
                 if (!isAbandoned)
                 {

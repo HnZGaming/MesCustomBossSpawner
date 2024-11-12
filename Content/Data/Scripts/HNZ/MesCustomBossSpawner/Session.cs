@@ -27,7 +27,7 @@ namespace HNZ.MesCustomBossSpawner
         ProtobufModule _protobufModule;
         CommandModule _commandModule;
         MESApi _mesApi;
-        FlashGpsApi _gpsApi;
+        BossGpsChannel _gpsApi;
         bool _runOnce;
 
         public Session()
@@ -60,7 +60,10 @@ namespace HNZ.MesCustomBossSpawner
             if (MyAPIGateway.Session.IsServer)
             {
                 _mesApi = new MESApi();
-                _gpsApi = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
+
+                var flashGps = new FlashGpsApi(nameof(MesCustomBossSpawner).GetHashCode());
+                _gpsApi = new BossGpsChannel(flashGps);
+                _gpsApi.Initialize();
 
                 PlanetCollection.Initialize();
                 _grids.Initialize();
@@ -74,15 +77,18 @@ namespace HNZ.MesCustomBossSpawner
             _protobufModule.Close();
             _commandModule.Close();
 
-            if (!MyAPIGateway.Session.IsServer) return;
-
-            foreach (var boss in _bosses.Values)
+            if (MyAPIGateway.Session.IsServer)
             {
-                boss.Close("UnloadData");
-            }
+                _gpsApi.Close();
+                
+                foreach (var boss in _bosses.Values)
+                {
+                    boss.Close("UnloadData");
+                }
 
-            PlanetCollection.Close();
-            _grids.Close();
+                PlanetCollection.Close();
+                _grids.Close();
+            }
         }
 
         public override void UpdateBeforeSimulation()
