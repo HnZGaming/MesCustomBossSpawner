@@ -6,7 +6,7 @@ A mod that allows you to spawn/despawn MES spawn groups at arbitrary positions w
 
 |Description|Screenshot|
 |:--|:--|
-|Spawning indicator GPS|![alt text](README/image.png)|
+|Spawning indicator GPS|![alt text](README/spawning.png)|
 |Spawned indicator GPS|![alt text](README/spawned.png)|
 |Spawned boss|![alt text](README/grid.png)|
 
