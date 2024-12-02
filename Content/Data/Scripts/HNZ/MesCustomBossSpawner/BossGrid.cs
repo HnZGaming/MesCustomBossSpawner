@@ -150,42 +150,50 @@ namespace HNZ.MesCustomBossSpawner
         {
             if (!_bossInfo.Enabled)
             {
+                Log.Warn($"aborted spawning; not enabled: {_bossInfo.Id}");
                 return false;
             }
 
             if (Grid != null)
             {
-                Log.Info($"aborted spawning; already spawned: {_bossInfo.Id}");
+                Log.Warn($"aborted spawning; already spawned: {_bossInfo.Id}");
                 return false;
             }
 
-            // position would be zero (not set)
-            // if Update() hasn't been called
-            // or ResetSpawningPosition() has been called earlier
-            if (_spawnPosition == null)
-            {
-                _spawnPosition = TryGetRandomSpawnPosition();
-                if (_spawnPosition == null)
-                {
-                    Log.Warn($"failed spawning; no space: {_bossInfo.Id}");
-                    return false;
-                }
-            }
-
-            var spawningPosition = _spawnPosition.Value;
-
+            // not a 100% proof but checks if the boss has already spawned there
             var searchSphere = (BoundingSphereD)_bossInfo.SpawnSphere;
             var entities = MyEntities.GetTopMostEntitiesInSphere(ref searchSphere).ToArray();
             if (TryInitializeWithSceneGrid(entities.OfType<IMyCubeGrid>()))
             {
-                Log.Info($"aborted spawning; already spawned: {_bossInfo.Id}");
+                Log.Warn($"aborted spawning; already spawned: {_bossInfo.Id}");
                 _spawnPosition = Grid?.WorldMatrix;
-                return true;
+                return false;
             }
 
-            _spawner.RequestSpawn(spawningPosition, true);
+            if (_spawnPosition == null)
+            {
+                _spawnPosition = TryGetRandomSpawnPosition();
+            }
+            else
+            {
+                // re-calculating the spawn position here,
+                // which causes the boss to spawn at a slightly offset position
+                // but ensures that it won't clip into player grids.
+                var sphere = new BoundingSphereD(_spawnPosition.Value.Translation, 10000);
+                _spawnPosition = TryGetRandomSpawnPosition(sphere);
+            }
+
+            if (_spawnPosition == null)
+            {
+                Log.Warn($"failed spawning; no space: {_bossInfo.Id}");
+                return false;
+            }
+
+            _spawner.RequestSpawn(_spawnPosition.Value, true);
             if (_spawner.State == MesSpawner.SpawningState.Failure)
             {
+                Log.Warn("failed spawning; MES error");
+
                 // reset so the next "spawn" attempt will generate a new matrix
                 _spawnPosition = null;
                 return false;
@@ -238,19 +246,19 @@ namespace HNZ.MesCustomBossSpawner
             _spawnPosition = TryGetRandomSpawnPosition();
         }
 
-        MatrixD? TryGetRandomSpawnPosition()
+        MatrixD? TryGetRandomSpawnPosition(BoundingSphereD? sphere = null)
         {
             return _bossInfo.PlanetSpawn
-                ? TryGetRandomPositionOnPlanet(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius)
-                : TryGetRandomPosition(_bossInfo.SpawnSphere, _bossInfo.ClearanceRadius);
+                ? TryGetRandomPositionOnPlanet(sphere ?? _bossInfo.SpawnSphere, _bossInfo.ClearanceRadius)
+                : TryGetRandomPositionInSpace(sphere ?? _bossInfo.SpawnSphere, _bossInfo.ClearanceRadius);
         }
 
-        static MatrixD? TryGetRandomPosition(BoundingSphereD sphere, float clearance)
+        static MatrixD? TryGetRandomPositionInSpace(BoundingSphereD sphere, float clearance)
         {
             for (var i = 0; i < 100; i++)
             {
                 Vector3D position;
-                if (GameUtils.TryGetRandomPosition(sphere, clearance, 0, out position))
+                if (GameUtils.TryGetRandomPosition<IMyEntity>(sphere, clearance, 0, out position))
                 {
                     var tested = new BoundingSphereD(position, 10000);
                     if (!Config.Instance.IntersectsAnySpawnVoids(tested))
@@ -278,7 +286,7 @@ namespace HNZ.MesCustomBossSpawner
                 if (GameUtils.TestSurfaceFlat(planet, surfacePoint, 20f, 2f))
                 {
                     var s = new BoundingSphereD(surfacePoint, clearance);
-                    if (!GameUtils.HasAnyGridsInSphere(s))
+                    if (!GameUtils.HasAnyEntitiesInSphere<IMyCubeGrid>(s))
                     {
                         var surfaceNormal = (surfacePoint - planet.PositionComp.GetPosition()).Normalized();
                         var forward = Vector3D.Cross(Vector3D.Cross(surfaceNormal, Vector3D.Forward), surfaceNormal);
