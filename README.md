@@ -68,6 +68,20 @@ The target MES spawn group definition must be modified as follows:
 [RivalAiReplaceRemoteControl:true]
 ```
 
+To disable cleanup timer, modify the target spawn group's behavior as follows:
+
+```diff
+[BehaviorName:Hunter]
+
++ [UsePlayerDistanceTimer:false]
++ [UseNoTargetTimer:false]
++ [NoTargetTimerTrigger:false]
++ [UseRetreatTimer:false]
+
+[AutopilotData:Porks-Autopilot-LargeShipBroadsideHunter-A]
+[SecondaryAutopilotData:Porks-Autopilot-LargeShipBroadsideHunter-B]
+```
+
 ## Other Interface Notes
 
 - This mod uses grid mod storage ID `6BFEA3E4-7B06-460C-ADD1-C1A66EB7B5E9`.
