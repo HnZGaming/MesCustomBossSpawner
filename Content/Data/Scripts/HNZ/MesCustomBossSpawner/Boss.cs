@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using HNZ.FlashGps.Interface;
 using HNZ.Utils.MES;
 using VRage.Game.ModAPI;
 
@@ -44,6 +43,11 @@ namespace HNZ.MesCustomBossSpawner
             }
         }
 
+        public bool TryActivate()
+        {
+            return _grid.TryActivate();
+        }
+
         public bool TrySpawn()
         {
             return _grid.TrySpawn();
@@ -51,7 +55,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void ResetSpawningPosition()
         {
-            _grid.ResetSpawningPosition();
+            _grid.ResetActivationPosition();
         }
     }
 }

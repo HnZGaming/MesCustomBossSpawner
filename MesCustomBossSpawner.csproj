@@ -134,6 +134,7 @@
         <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSerialization.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\FlashGps.Interface\FlashGpsSource.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Boss.cs" />
+        <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossActivationTracker.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossInfo.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\Config.cs" />
         <Compile Include="Content\Data\Scripts\HNZ\MesCustomBossSpawner\BossGrid.cs" />
