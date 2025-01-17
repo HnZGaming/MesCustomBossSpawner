@@ -2,6 +2,7 @@
 
 namespace HNZ.MesCustomBossSpawner
 {
+    //todo move to Flash GPS
     public sealed class BossGpsChannel
     {
         readonly FlashGpsApi _flashGpsApi;

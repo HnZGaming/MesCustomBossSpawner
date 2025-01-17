@@ -7,7 +7,6 @@ using HNZ.Utils.Logging;
 using HNZ.Utils.MES;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
-using VRage.Game.Entity;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
 using VRageMath;
@@ -23,9 +22,9 @@ namespace HNZ.MesCustomBossSpawner
         readonly long _gpsId;
         readonly MesSpawner _spawner;
         IMyRemoteControl _coreBlock;
-        MatrixD? _spawnPosition;
+        MatrixD? _activationPosition;
         int _originalBlockCount;
-        DateTime? _abandonStartTime;
+        bool _isActivated;
 
         public BossGrid(MESApi mesApi, BossGpsChannel gpsApi, BossInfo bossInfo)
         {
@@ -43,7 +42,13 @@ namespace HNZ.MesCustomBossSpawner
         {
             _scheduler.Initialize(DateTime.Now);
             _spawner.OnGridSet += OnGridSet;
-            _abandonStartTime = null;
+
+            Vector3D position;
+            if (BossActivationTracker.Instance.TryGetActivationPosition(_bossInfo.Id, out position))
+            {
+                _isActivated = true;
+                _activationPosition = MatrixD.CreateTranslation(position);
+            }
         }
 
         public void Close(string reason)
@@ -57,34 +62,27 @@ namespace HNZ.MesCustomBossSpawner
             _spawner.Close();
             _gpsApi.Remove(_gpsId);
             _spawner.OnGridSet -= OnGridSet;
+
+            BossActivationTracker.Instance.OnInvalidate(_bossInfo.Id);
         }
 
         public void Update()
         {
             if (Closed) return;
+            if (!Config.Instance.Enabled) return;
 
-            if (GameUtils.EverySeconds(1) && Config.Instance.Enabled)
+            if (GameUtils.EverySeconds(1))
             {
-                if (_scheduler.Update(DateTime.Now))
+                if (_scheduler.Update(DateTime.Now) && !_isActivated)
+                {
+                    var result = TryActivate();
+                    Log.Info($"activation (scheduled) result: {result}; {_bossInfo.SpawnGroup}");
+                }
+
+                if (DetectPlayerEncounter())
                 {
                     var result = TrySpawn();
-                    Log.Info($"scheduled spawn result: {result}; {_bossInfo.SpawnGroup}");
-                }
-
-                var isAbandoned = Grid != null && IsAbandoned();
-                if (!isAbandoned)
-                {
-                    _abandonStartTime = null;
-                }
-                else if (_abandonStartTime == null)
-                {
-                    Log.Info($"Boss abandoned: {_bossInfo.Id}");
-                    _abandonStartTime = DateTime.UtcNow;
-                }
-                else if ((DateTime.UtcNow - _abandonStartTime)?.TotalSeconds > Config.Instance.AbandonCountdown)
-                {
-                    Log.Info($"Closing boss abandoned: {_bossInfo.Id}");
-                    Close("Abandoned");
+                    Log.Info($"spawn (scheduled) result: {result}; {_bossInfo.SpawnGroup}");
                 }
             }
 
@@ -99,16 +97,15 @@ namespace HNZ.MesCustomBossSpawner
 
             // make the "would-be" matrix (before spawning the grid)
             // so we can broadcast it earlier
-            if (_spawnPosition == null)
+            if (_activationPosition == null)
             {
-                _spawnPosition = TryGetRandomSpawnPosition();
+                ResetActivationPosition();
                 return;
             }
 
-            var spawningPosition = _spawnPosition.Value;
-
             if (GameUtils.EverySeconds(1))
             {
+                var spawningPosition = _activationPosition.Value;
                 var bossEnabled = _bossInfo.Enabled;
                 var bossGridClosed = Grid?.Closed ?? false;
                 var countdownStarted = _scheduler.Countdown != null;
@@ -123,6 +120,20 @@ namespace HNZ.MesCustomBossSpawner
                         Name = _bossInfo.GridGpsName,
                         Description = _bossInfo.GpsDescription,
                         Position = _coreBlock.OrNull()?.GetPosition() ?? Grid.GetPosition(),
+                        DecaySeconds = 5,
+                        Color = Color.Orange,
+                        Radius = _bossInfo.GpsRadius,
+                        SuppressSound = true,
+                    });
+                }
+                else if (_isActivated)
+                {
+                    _gpsApi.AddOrUpdate(new FlashGpsSource
+                    {
+                        Id = _gpsId,
+                        Name = _bossInfo.GridGpsName,
+                        Description = _bossInfo.GpsDescription,
+                        Position = spawningPosition.Translation,
                         DecaySeconds = 5,
                         Color = Color.Orange,
                         Radius = _bossInfo.GpsRadius,
@@ -146,6 +157,34 @@ namespace HNZ.MesCustomBossSpawner
             }
         }
 
+        public bool TryActivate()
+        {
+            if (_isActivated)
+            {
+                Log.Warn("already activated");
+                return false;
+            }
+
+            if (!_bossInfo.Enabled)
+            {
+                Log.Warn($"aborted activation; not enabled: {_bossInfo.Id}");
+                return false;
+            }
+
+            _isActivated = true;
+            return true;
+        }
+
+        bool DetectPlayerEncounter()
+        {
+            if (!_isActivated) return false;
+            if (Closed) return false;
+            if (Grid.OrNull() != null) return false;
+            if (_spawner.State == MesSpawner.SpawningState.Spawning) return false;
+            if (_activationPosition == null) return false;
+            return HasPlayersNearby(_activationPosition.Value.Translation, Config.Instance.EncounterRange);
+        }
+
         public bool TrySpawn()
         {
             if (!_bossInfo.Enabled)
@@ -166,36 +205,33 @@ namespace HNZ.MesCustomBossSpawner
             if (TryInitializeWithSceneGrid(entities.OfType<IMyCubeGrid>()))
             {
                 Log.Warn($"aborted spawning; already spawned: {_bossInfo.Id}");
-                _spawnPosition = Grid?.WorldMatrix;
                 return false;
             }
 
-            if (_spawnPosition == null)
+            MatrixD? spawnPosition;
+            if (_activationPosition == null)
             {
-                _spawnPosition = TryGetRandomSpawnPosition();
+                spawnPosition = TryGetRandomPosition();
             }
             else
             {
                 // re-calculating the spawn position here,
                 // which causes the boss to spawn at a slightly offset position
                 // but ensures that it won't clip into player grids.
-                var sphere = new BoundingSphereD(_spawnPosition.Value.Translation, 10000);
-                _spawnPosition = TryGetRandomSpawnPosition(sphere);
+                var sphere = new BoundingSphereD(_activationPosition.Value.Translation, 10000);
+                spawnPosition = TryGetRandomPosition(sphere);
             }
 
-            if (_spawnPosition == null)
+            if (spawnPosition == null)
             {
                 Log.Warn($"failed spawning; no space: {_bossInfo.Id}");
                 return false;
             }
 
-            _spawner.RequestSpawn(_spawnPosition.Value, true);
+            _spawner.RequestSpawn(spawnPosition.Value, true);
             if (_spawner.State == MesSpawner.SpawningState.Failure)
             {
                 Log.Warn("failed spawning; MES error");
-
-                // reset so the next "spawn" attempt will generate a new matrix
-                _spawnPosition = null;
                 return false;
             }
 
@@ -226,27 +262,20 @@ namespace HNZ.MesCustomBossSpawner
 
             _originalBlockCount = ((MyCubeGrid)Grid).BlocksCount;
             Log.Debug($"{_bossInfo.Id} original block count: {_originalBlockCount}");
+
+            BossActivationTracker.Instance.OnInvalidate(_bossInfo.Id);
         }
 
-        bool IsAbandoned()
+        public void ResetActivationPosition()
         {
-            var blocksCount = ((MyCubeGrid)Grid).BlocksCount;
-            Log.Debug($"{_bossInfo.Id} block count: {blocksCount}");
-            if (blocksCount >= _originalBlockCount) return false;
-
-            var hasPlayersNearby = HasPlayersNearby(Grid, Config.Instance.AbandonRange);
-            Log.Debug($"{_bossInfo.Id} has players nearby: {hasPlayersNearby} in {Config.Instance.AbandonRange}");
-            if (hasPlayersNearby) return false;
-
-            return true;
+            _activationPosition = TryGetRandomPosition();
+            if (_activationPosition != null)
+            {
+                BossActivationTracker.Instance.OnActivate(_bossInfo.Id, _activationPosition.Value.Translation);
+            }
         }
 
-        public void ResetSpawningPosition()
-        {
-            _spawnPosition = TryGetRandomSpawnPosition();
-        }
-
-        MatrixD? TryGetRandomSpawnPosition(BoundingSphereD? sphere = null)
+        MatrixD? TryGetRandomPosition(BoundingSphereD? sphere = null)
         {
             return _bossInfo.PlanetSpawn
                 ? TryGetRandomPositionOnPlanet(sphere ?? _bossInfo.SpawnSphere, _bossInfo.ClearanceRadius)
@@ -298,21 +327,16 @@ namespace HNZ.MesCustomBossSpawner
             return null;
         }
 
-        static bool HasPlayersNearby(IMyEntity target, double range)
+        static bool HasPlayersNearby(Vector3D position, double range)
         {
-            var sphere = new BoundingSphereD(target.GetPosition(), range);
-            var entities = new List<MyEntity>();
-            MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, entities, MyEntityQueryType.Both);
-            foreach (var entity in entities)
+            var players = new List<IMyPlayer>();
+            MyAPIGateway.Players.GetPlayers(players);
+            foreach (var player in players)
             {
-                // has "floating" characters nearby
-                if (entity is IMyCharacter) return true;
-
-                var g = entity as MyCubeGrid;
-                if (g == null) continue;
-
-                // has "seated" characters nearby
-                if (g.OccupiedBlocks.Count > 0) return true;
+                if (player.Character == null) continue;
+                var playerPosition = player.Character.GetPosition();
+                var distance = Vector3D.Distance(playerPosition, position);
+                if (distance < range) return true;
             }
 
             return false;

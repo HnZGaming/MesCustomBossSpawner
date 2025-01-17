@@ -36,6 +36,7 @@ namespace HNZ.MesCustomBossSpawner
             {
                 { "reload", Command_Reload },
                 { "enabled", Command_Enabled },
+                { "activate", Command_Activate },
                 { "spawn", Command_Spawn },
                 { "despawn", Command_Despawn },
                 { "reset", Command_ResetPosition },
@@ -68,6 +69,8 @@ namespace HNZ.MesCustomBossSpawner
                 PlanetCollection.Initialize();
                 _grids.Initialize();
 
+                BossActivationTracker.Instance.Load();
+
                 ReloadConfig();
             }
         }
@@ -80,7 +83,7 @@ namespace HNZ.MesCustomBossSpawner
             if (MyAPIGateway.Session.IsServer)
             {
                 _gpsApi.Close();
-                
+
                 foreach (var boss in _bosses.Values)
                 {
                     boss.Close("UnloadData");
@@ -95,6 +98,7 @@ namespace HNZ.MesCustomBossSpawner
         {
             _protobufModule.Update();
             _commandModule.Update();
+            BossActivationTracker.Instance.Update();
 
             if (!MyAPIGateway.Session.IsServer) return;
 
@@ -196,6 +200,28 @@ namespace HNZ.MesCustomBossSpawner
 
             Config.Instance.Enabled = enabled;
             command.Respond("CBS", Color.White, $"spawning enabled: {enabled}");
+        }
+
+        void Command_Activate(Command command)
+        {
+            if (!GameUtils.IsAdmin(command.SteamId))
+            {
+                command.Respond("CBS", Color.Red, "not admin");
+                return;
+            }
+
+            string id;
+            Boss boss;
+            if (command.Arguments.TryGetFirstValue(out id) &&
+                _bosses.TryGetValue(id, out boss))
+            {
+                var result = boss.TryActivate();
+                command.Respond("CBS", Color.White, $"activation result: {result}");
+            }
+            else
+            {
+                command.Respond("CBS", Color.Red, $"invalid id: {id}");
+            }
         }
 
         void Command_Spawn(Command command)
