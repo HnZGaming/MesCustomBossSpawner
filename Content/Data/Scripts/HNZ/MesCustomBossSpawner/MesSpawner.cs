@@ -27,7 +27,6 @@ namespace HNZ.MesCustomBossSpawner
         readonly string _id;
         MatrixD _targetMatrix;
         DateTime _startTime;
-        bool _setIgnoreCleanup;
 
         public MesSpawner(MESApi mesApi, string spawnGroup, string id)
         {
@@ -77,14 +76,8 @@ namespace HNZ.MesCustomBossSpawner
             var timeout = _startTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
             if (State == SpawningState.Spawning && timeout.TotalSeconds < 0)
             {
-                Log.Warn($"timeout: {_spawnGroup}");
+                Log.Warn($"timeout spawning: {_spawnGroup}");
                 State = SpawningState.Failure;
-            }
-
-            if (State == SpawningState.Success && !_setIgnoreCleanup)
-            {
-                _mesApi.SetSpawnerIgnoreForDespawn(SpawnedGrid, true);
-                _setIgnoreCleanup = true;
             }
         }
 
