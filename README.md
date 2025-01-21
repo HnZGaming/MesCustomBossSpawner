@@ -1,13 +1,13 @@
 # MES Custom Boss Spawner
 
-A mod that allows you to spawn/despawn MES spawn groups at arbitrary positions with a time interval, using MESApi. 
+A mod that allows you to spawn MES spawn groups, irrelevant to player positions. 
 
 ## Screenshots
 
 |Description|Screenshot|
 |:--|:--|
 |Spawning indicator GPS|![alt text](README/spawning.png)|
-|Spawned indicator GPS|![alt text](README/spawned.png)|
+|Acivtation indicator GPS|![alt text](README/spawned.png)|
 |Spawned boss|![alt text](README/grid.png)|
 
 ## Configuration Sample
@@ -43,8 +43,9 @@ Schedule should've been cron but I didn't think of that at the moment.
 
 |Example|Description|
 |:--|:--|
-|`/cbs spawn Common_Earth`|Spawns a spawn group given the boss ID.|
-|`/cbs despawn Common_Earth`|Despawns a spawn group given the boss ID.|
+|`/cbs activate Common_Earth`|Activartes a spawn group on player GPS HUDs.|
+|`/cbs spawn Common_Earth`|Spawns a spawn group in the game world.|
+|`/cbs despawn Common_Earth`|Despawns a spawn group.|
 |`/cbs reset`|Despawns all bosses and reset their next spawning positions.|
 |`/cbs reload`|Reloads the config from the disk, and despawns all bosses.|
 
@@ -66,20 +67,6 @@ The target MES spawn group definition must be modified as follows:
 + [RivalAiSpawn: true]
 [UseRivalAi:true]
 [RivalAiReplaceRemoteControl:true]
-```
-
-To disable cleanup timer, modify the target spawn group's behavior as follows:
-
-```diff
-[BehaviorName:Hunter]
-
-+ [UsePlayerDistanceTimer:false]
-+ [UseNoTargetTimer:false]
-+ [NoTargetTimerTrigger:false]
-+ [UseRetreatTimer:false]
-
-[AutopilotData:Porks-Autopilot-LargeShipBroadsideHunter-A]
-[SecondaryAutopilotData:Porks-Autopilot-LargeShipBroadsideHunter-B]
 ```
 
 ## Other Interface Notes
