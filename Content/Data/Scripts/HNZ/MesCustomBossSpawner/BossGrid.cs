@@ -16,7 +16,7 @@ namespace HNZ.MesCustomBossSpawner
     public sealed class BossGrid
     {
         static readonly Logger Log = LoggerManager.Create(nameof(BossGrid));
-        readonly BossInfo _bossInfo;
+        readonly BossConfig _bossConfig;
         readonly Scheduler _scheduler;
         readonly BossGpsChannel _gpsApi;
         readonly long _gpsId;
@@ -26,13 +26,16 @@ namespace HNZ.MesCustomBossSpawner
         int _originalBlockCount;
         bool _isActivated;
 
-        public BossGrid(MESApi mesApi, BossGpsChannel gpsApi, BossInfo bossInfo)
+        public BossGrid(MESApi mesApi, BossGpsChannel gpsApi, BossConfig bossConfig)
         {
-            _bossInfo = bossInfo;
+            _bossConfig = bossConfig;
             _gpsApi = gpsApi;
-            _scheduler = new Scheduler(bossInfo.Schedules);
-            _gpsId = bossInfo.Id.GetHashCode();
-            _spawner = new MesSpawner(mesApi, bossInfo.SpawnGroup, bossInfo.Id);
+            _scheduler = new Scheduler(bossConfig.Schedules);
+            _gpsId = bossConfig.Id.GetHashCode();
+
+            var spawnGroupIndex = MathUtils.WeightedRandom(bossConfig.SpawnGroup.Select(c => c.Weight).ToArray());
+            var spawnGroupName = bossConfig.SpawnGroup[spawnGroupIndex].SpawnGroupName;
+            _spawner = new MesSpawner(mesApi, spawnGroupName, bossConfig.Id);
         }
 
         IMyCubeGrid Grid => _spawner.SpawnedGrid;
@@ -44,7 +47,7 @@ namespace HNZ.MesCustomBossSpawner
             _spawner.OnGridSet += OnGridSet;
 
             Vector3D position;
-            if (BossActivationTracker.Instance.TryGetActivationPosition(_bossInfo.Id, out position))
+            if (BossActivationTracker.Instance.TryGetActivationPosition(_bossConfig.Id, out position))
             {
                 _isActivated = true;
                 _activationPosition = MatrixD.CreateTranslation(position);
@@ -55,7 +58,7 @@ namespace HNZ.MesCustomBossSpawner
         {
             if (Closed) return;
 
-            Log.Info($"closing boss: {_bossInfo.Id}; reason: {reason}");
+            Log.Info($"closing boss: {_bossConfig.Id}; reason: {reason}");
 
             Closed = true;
             Grid.OrNull()?.Close();
@@ -63,7 +66,7 @@ namespace HNZ.MesCustomBossSpawner
             _gpsApi.Remove(_gpsId);
             _spawner.OnGridSet -= OnGridSet;
 
-            BossActivationTracker.Instance.OnInvalidate(_bossInfo.Id);
+            BossActivationTracker.Instance.OnInvalidate(_bossConfig.Id);
         }
 
         public void Update()
@@ -76,13 +79,13 @@ namespace HNZ.MesCustomBossSpawner
                 if (_scheduler.Update(DateTime.Now) && !_isActivated)
                 {
                     var result = TryActivate();
-                    Log.Info($"activation (scheduled) result: {result}; {_bossInfo.SpawnGroup}");
+                    Log.Info($"activation (scheduled) result: {result}; {_bossConfig.SpawnGroup}");
                 }
 
                 if (DetectPlayerEncounter())
                 {
                     var result = TrySpawn();
-                    Log.Info($"spawn (scheduled) result: {result}; {_bossInfo.SpawnGroup}");
+                    Log.Info($"spawn (scheduled) result: {result}; {_bossConfig.SpawnGroup}");
                 }
             }
 
@@ -106,10 +109,10 @@ namespace HNZ.MesCustomBossSpawner
             if (GameUtils.EverySeconds(1))
             {
                 var spawningPosition = _activationPosition.Value;
-                var bossEnabled = _bossInfo.Enabled;
+                var bossEnabled = _bossConfig.Enabled;
                 var bossGridClosed = Grid?.Closed ?? false;
                 var countdownStarted = _scheduler.Countdown != null;
-                Log.Debug($"every second; {_bossInfo.Id}: {bossEnabled}, {bossGridClosed}, {countdownStarted}");
+                Log.Debug($"every second; {_bossConfig.Id}: {bossEnabled}, {bossGridClosed}, {countdownStarted}");
                 if (!bossEnabled || bossGridClosed || !countdownStarted) return;
 
                 if (Grid != null)
@@ -117,12 +120,12 @@ namespace HNZ.MesCustomBossSpawner
                     _gpsApi.AddOrUpdate(new FlashGpsSource
                     {
                         Id = _gpsId,
-                        Name = _bossInfo.GridGpsName,
-                        Description = _bossInfo.GpsDescription,
+                        Name = _bossConfig.GridGpsName,
+                        Description = _bossConfig.GpsDescription,
                         Position = _coreBlock.OrNull()?.GetPosition() ?? Grid.GetPosition(),
                         DecaySeconds = 5,
                         Color = Color.Orange,
-                        Radius = _bossInfo.GpsRadius,
+                        Radius = _bossConfig.GpsRadius,
                         SuppressSound = true,
                     });
                 }
@@ -131,12 +134,12 @@ namespace HNZ.MesCustomBossSpawner
                     _gpsApi.AddOrUpdate(new FlashGpsSource
                     {
                         Id = _gpsId,
-                        Name = _bossInfo.GridGpsName,
-                        Description = _bossInfo.GpsDescription,
+                        Name = _bossConfig.GridGpsName,
+                        Description = _bossConfig.GpsDescription,
                         Position = spawningPosition.Translation,
                         DecaySeconds = 5,
                         Color = Color.Orange,
-                        Radius = _bossInfo.GpsRadius,
+                        Radius = _bossConfig.GpsRadius,
                         SuppressSound = true,
                     });
                 }
@@ -145,12 +148,12 @@ namespace HNZ.MesCustomBossSpawner
                     _gpsApi.AddOrUpdate(new FlashGpsSource
                     {
                         Id = _gpsId,
-                        Name = string.Format(_bossInfo.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
-                        Description = _bossInfo.GpsDescription,
+                        Name = string.Format(_bossConfig.CountdownGpsName, LangUtils.HoursToString(_scheduler.Countdown.Value)),
+                        Description = _bossConfig.GpsDescription,
                         Position = spawningPosition.Translation,
                         DecaySeconds = 5,
                         Color = Color.Orange,
-                        Radius = _bossInfo.GpsRadius,
+                        Radius = _bossConfig.GpsRadius,
                         SuppressSound = true,
                     });
                 }
@@ -165,9 +168,9 @@ namespace HNZ.MesCustomBossSpawner
                 return false;
             }
 
-            if (!_bossInfo.Enabled)
+            if (!_bossConfig.Enabled)
             {
-                Log.Warn($"aborted activation; not enabled: {_bossInfo.Id}");
+                Log.Warn($"aborted activation; not enabled: {_bossConfig.Id}");
                 return false;
             }
 
@@ -187,24 +190,24 @@ namespace HNZ.MesCustomBossSpawner
 
         public bool TrySpawn()
         {
-            if (!_bossInfo.Enabled)
+            if (!_bossConfig.Enabled)
             {
-                Log.Warn($"aborted spawning; not enabled: {_bossInfo.Id}");
+                Log.Warn($"aborted spawning; not enabled: {_bossConfig.Id}");
                 return false;
             }
 
             if (Grid != null)
             {
-                Log.Warn($"aborted spawning; already spawned: {_bossInfo.Id}");
+                Log.Warn($"aborted spawning; already spawned: {_bossConfig.Id}");
                 return false;
             }
 
             // not a 100% proof but checks if the boss has already spawned there
-            var searchSphere = (BoundingSphereD)_bossInfo.SpawnSphere;
+            var searchSphere = (BoundingSphereD)_bossConfig.SpawnSphere;
             var entities = MyEntities.GetTopMostEntitiesInSphere(ref searchSphere).ToArray();
             if (TryInitializeWithSceneGrid(entities.OfType<IMyCubeGrid>()))
             {
-                Log.Warn($"aborted spawning; already spawned: {_bossInfo.Id}");
+                Log.Warn($"aborted spawning; already spawned: {_bossConfig.Id}");
                 return false;
             }
 
@@ -224,7 +227,7 @@ namespace HNZ.MesCustomBossSpawner
 
             if (spawnPosition == null)
             {
-                Log.Warn($"failed spawning; no space: {_bossInfo.Id}");
+                Log.Warn($"failed spawning; no space: {_bossConfig.Id}");
                 return false;
             }
 
@@ -242,9 +245,9 @@ namespace HNZ.MesCustomBossSpawner
         {
             foreach (var grid in grids)
             {
-                if (MesSpawner.TestIdentity(grid, _bossInfo.SpawnGroup, _bossInfo.Id))
+                if (MesSpawner.IsMyGrid(grid, _bossConfig.Id))
                 {
-                    Log.Info($"initializing with grid in scene: {_bossInfo.Id}");
+                    Log.Info($"initializing with grid in scene: {_bossConfig.Id}");
                     _spawner.SetSpawnedGrid(grid);
                     return true;
                 }
@@ -256,14 +259,14 @@ namespace HNZ.MesCustomBossSpawner
         void OnGridSet()
         {
             _coreBlock = Grid.GetFatBlocks<IMyRemoteControl>().FirstOrDefault();
-            Log.Debug($"{_bossInfo.Id} boss remote control found?: {_coreBlock != null}");
+            Log.Debug($"{_bossConfig.Id} boss remote control found?: {_coreBlock != null}");
 
-            Grid.DisplayName = $"[BOSS] {_bossInfo.Id}";
+            Grid.DisplayName = $"[BOSS] {_bossConfig.Id}";
 
             _originalBlockCount = ((MyCubeGrid)Grid).BlocksCount;
-            Log.Debug($"{_bossInfo.Id} original block count: {_originalBlockCount}");
+            Log.Debug($"{_bossConfig.Id} original block count: {_originalBlockCount}");
 
-            BossActivationTracker.Instance.OnInvalidate(_bossInfo.Id);
+            BossActivationTracker.Instance.OnInvalidate(_bossConfig.Id);
         }
 
         public void ResetActivationPosition()
@@ -271,15 +274,15 @@ namespace HNZ.MesCustomBossSpawner
             _activationPosition = TryGetRandomPosition();
             if (_activationPosition != null)
             {
-                BossActivationTracker.Instance.OnActivate(_bossInfo.Id, _activationPosition.Value.Translation);
+                BossActivationTracker.Instance.OnActivate(_bossConfig.Id, _activationPosition.Value.Translation);
             }
         }
 
         MatrixD? TryGetRandomPosition(BoundingSphereD? sphere = null)
         {
-            return _bossInfo.PlanetSpawn
-                ? TryGetRandomPositionOnPlanet(sphere ?? _bossInfo.SpawnSphere, _bossInfo.ClearanceRadius)
-                : TryGetRandomPositionInSpace(sphere ?? _bossInfo.SpawnSphere, _bossInfo.ClearanceRadius);
+            return _bossConfig.PlanetSpawn
+                ? TryGetRandomPositionOnPlanet(sphere ?? _bossConfig.SpawnSphere, _bossConfig.ClearanceRadius)
+                : TryGetRandomPositionInSpace(sphere ?? _bossConfig.SpawnSphere, _bossConfig.ClearanceRadius);
         }
 
         static MatrixD? TryGetRandomPositionInSpace(BoundingSphereD sphere, float clearance)

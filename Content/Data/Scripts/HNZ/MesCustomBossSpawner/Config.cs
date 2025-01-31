@@ -18,7 +18,7 @@ namespace HNZ.MesCustomBossSpawner
         public int EncounterRange { get; set; } = 20000;
 
         [XmlArrayItem("Boss")]
-        public BossInfo[] Bosses;
+        public BossConfig[] Bosses;
 
         [XmlArray]
         public Sphere[] SpawnVoids;
@@ -28,7 +28,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void TryInitialize()
         {
-            LangUtils.NullOrDefault(ref Bosses, Array.Empty<BossInfo>());
+            LangUtils.NullOrDefault(ref Bosses, Array.Empty<BossConfig>());
             LangUtils.NullOrDefault(ref Logs, Array.Empty<LogConfig>());
             LangUtils.NullOrDefault(ref SpawnVoids, Array.Empty<Sphere>());
 
@@ -43,7 +43,7 @@ namespace HNZ.MesCustomBossSpawner
             Enabled = true,
             Bosses = new[]
             {
-                BossInfo.CreateDefault()
+                BossConfig.CreateDefault()
             },
             SpawnVoids = new[]
             {

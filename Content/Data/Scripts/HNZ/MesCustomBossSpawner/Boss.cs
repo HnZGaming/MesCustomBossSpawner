@@ -8,19 +8,19 @@ namespace HNZ.MesCustomBossSpawner
     {
         readonly MESApi _mesApi;
         readonly BossGpsChannel _gpsApi;
-        readonly BossInfo _info;
+        readonly BossConfig _config;
         BossGrid _grid;
 
-        public Boss(MESApi mesApi, BossGpsChannel gpsApi, BossInfo info)
+        public Boss(MESApi mesApi, BossGpsChannel gpsApi, BossConfig config)
         {
             _mesApi = mesApi;
             _gpsApi = gpsApi;
-            _info = info;
+            _config = config;
         }
 
         public void Initialize()
         {
-            _grid = new BossGrid(_mesApi, _gpsApi, _info);
+            _grid = new BossGrid(_mesApi, _gpsApi, _config);
             _grid.Initialize();
         }
 

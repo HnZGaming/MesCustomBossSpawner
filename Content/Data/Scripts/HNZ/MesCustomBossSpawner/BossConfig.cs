@@ -4,7 +4,7 @@ using HNZ.Utils;
 
 namespace HNZ.MesCustomBossSpawner
 {
-    public sealed class BossInfo
+    public sealed class BossConfig
     {
         [XmlElement]
         public string Id;
@@ -13,7 +13,7 @@ namespace HNZ.MesCustomBossSpawner
         public bool Enabled;
 
         [XmlElement]
-        public string SpawnGroup;
+        public SpawnGroupConfig[] SpawnGroup;
 
         [XmlElement]
         public bool PlanetSpawn;
@@ -54,11 +54,11 @@ namespace HNZ.MesCustomBossSpawner
             return $"{nameof(Id)}: {Id}, {nameof(SpawnGroup)}: {SpawnGroup}";
         }
 
-        public static BossInfo CreateDefault() => new BossInfo
+        public static BossConfig CreateDefault() => new BossConfig
         {
             Id = "Bababooey",
             Enabled = true,
-            SpawnGroup = "Porks-SpawnGroup-Boss-BigMekKrooza",
+            SpawnGroup = new[] { new SpawnGroupConfig() },
             PlanetSpawn = false,
             SpawnSphere = new Sphere
             {

@@ -84,7 +84,8 @@ namespace HNZ.MesCustomBossSpawner
         void OnMesAnySuccessfulSpawn(IMyCubeGrid grid)
         {
             // not my spawn group
-            if (!TestIdentity(grid, _spawnGroup)) return;
+            if (grid == null) return;
+            if (!NpcData.TestSpawnGroup(grid, _spawnGroup)) return;
 
             Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}");
 
@@ -107,18 +108,14 @@ namespace HNZ.MesCustomBossSpawner
             OnGridSet?.Invoke();
         }
 
-        public static bool TestIdentity(IMyCubeGrid grid, string spawnGroup, string id = null)
+        public static bool IsMyGrid(IMyCubeGrid grid, string id)
         {
             if (grid == null) return false;
-            if (!NpcData.TestSpawnGroup(grid, spawnGroup)) return false;
+            if (id == null) return true;
 
-            if (id != null)
-            {
-                string existingId;
-                if (!grid.TryGetStorageValue(ModStorageKey, out existingId)) return false;
-                if (existingId != id) return false;
-            }
-
+            string existingId;
+            if (!grid.TryGetStorageValue(ModStorageKey, out existingId)) return false;
+            if (existingId != id) return false;
             return true;
         }
     }
