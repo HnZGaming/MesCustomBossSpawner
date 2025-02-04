@@ -82,10 +82,11 @@ namespace HNZ.MesCustomBossSpawner
                     Log.Info($"activation (scheduled) result: {result}; {_bossConfig.SpawnGroup}");
                 }
 
-                if (DetectPlayerEncounter())
+                IMyPlayer player;
+                if (TryDetectPlayerEncounter(out player))
                 {
                     var result = TrySpawn();
-                    Log.Info($"spawn (scheduled) result: {result}; {_bossConfig.SpawnGroup}");
+                    Log.Info($"spawn (scheduled) result: {result}; {_bossConfig.SpawnGroup}, player: {player.DisplayName}");
                 }
             }
 
@@ -178,14 +179,15 @@ namespace HNZ.MesCustomBossSpawner
             return true;
         }
 
-        bool DetectPlayerEncounter()
+        bool TryDetectPlayerEncounter(out IMyPlayer player)
         {
+            player = null;
             if (!_isActivated) return false;
             if (Closed) return false;
             if (Grid.OrNull() != null) return false;
             if (_spawner.State == MesSpawner.SpawningState.Spawning) return false;
             if (_activationPosition == null) return false;
-            return HasPlayersNearby(_activationPosition.Value.Translation, Config.Instance.EncounterRange);
+            return TryGetPlayerNearby(_activationPosition.Value.Translation, Config.Instance.EncounterRange, out player);
         }
 
         public bool TrySpawn()
@@ -330,18 +332,23 @@ namespace HNZ.MesCustomBossSpawner
             return null;
         }
 
-        static bool HasPlayersNearby(Vector3D position, double range)
+        static bool TryGetPlayerNearby(Vector3D position, double range, out IMyPlayer player)
         {
             var players = new List<IMyPlayer>();
             MyAPIGateway.Players.GetPlayers(players);
-            foreach (var player in players)
+            foreach (var p in players)
             {
-                if (player.Character == null) continue;
-                var playerPosition = player.Character.GetPosition();
+                if (p.Character == null) continue;
+                var playerPosition = p.Character.GetPosition();
                 var distance = Vector3D.Distance(playerPosition, position);
-                if (distance < range) return true;
+                if (distance < range)
+                {
+                    player = p;
+                    return true;
+                }
             }
 
+            player = null;
             return false;
         }
     }
