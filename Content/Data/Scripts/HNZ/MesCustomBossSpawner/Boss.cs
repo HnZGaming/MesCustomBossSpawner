@@ -31,7 +31,7 @@ namespace HNZ.MesCustomBossSpawner
 
         public void OnFirstFrame(IEnumerable<IMyCubeGrid> grids)
         {
-            _grid.TryInitializeWithSceneGrid(grids);
+            _grid.Initialize(grids);
         }
 
         public void Update()

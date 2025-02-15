@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using HNZ.Utils;
 using HNZ.Utils.Logging;
 using HNZ.Utils.MES;
 using VRage.Game.ModAPI;
@@ -19,14 +18,10 @@ namespace HNZ.MesCustomBossSpawner
         }
 
         static readonly Logger Log = LoggerManager.Create(nameof(MesSpawner));
-        static readonly Guid ModStorageKey = Guid.Parse("6BFEA3E4-7B06-460C-ADD1-C1A66EB7B5E9");
-        const float TimeoutSecs = 10;
 
         readonly MESApi _mesApi;
         readonly string _spawnGroup;
         readonly string _id;
-        MatrixD _targetMatrix;
-        DateTime _startTime;
 
         public MesSpawner(MESApi mesApi, string spawnGroup, string id)
         {
@@ -52,20 +47,19 @@ namespace HNZ.MesCustomBossSpawner
         {
             Log.Info($"spawn request: {_spawnGroup} at {targetMatrix.Translation}");
 
-            if (!_mesApi.CustomSpawnRequest(
-                    new List<string> { _spawnGroup },
-                    targetMatrix,
-                    Vector3.Zero,
-                    ignoreSafetyCheck,
-                    null,
-                    nameof(MesCustomBossSpawner)))
+            if (!_mesApi.CustomSpawnRequest(new MESApi.CustomSpawnRequestArgs
+                {
+                    SpawnProfileId = nameof(MesCustomBossSpawner),
+                    SpawnGroups = new List<string> { _spawnGroup },
+                    SpawningMatrix = targetMatrix,
+                    IgnoreSafetyCheck = ignoreSafetyCheck,
+                    Context = _id,
+                }))
             {
                 State = SpawningState.Failure;
                 return;
             }
 
-            _startTime = DateTime.UtcNow;
-            _targetMatrix = targetMatrix;
             State = SpawningState.Spawning;
 
             _mesApi.RegisterSuccessfulSpawnAction(OnMesAnySuccessfulSpawn, true);
@@ -73,49 +67,27 @@ namespace HNZ.MesCustomBossSpawner
 
         public void Update()
         {
-            var timeout = _startTime + TimeSpan.FromSeconds(TimeoutSecs) - DateTime.UtcNow;
-            if (State == SpawningState.Spawning && timeout.TotalSeconds < 0)
-            {
-                Log.Warn($"timeout spawning: {_spawnGroup}");
-                State = SpawningState.Failure;
-            }
         }
 
         void OnMesAnySuccessfulSpawn(IMyCubeGrid grid)
         {
-            // not my spawn group
-            if (grid == null) return;
-            if (!NpcData.TestSpawnGroup(grid, _spawnGroup)) return;
-
-            Log.Info($"spawn found: {grid.DisplayName} for spawn group: {_spawnGroup}");
-
-            // not mine
-            var gridPos = grid.WorldMatrix.Translation;
-            if (Vector3D.Distance(gridPos, _targetMatrix.Translation) > 500)
+            if (IsMine(grid))
             {
-                Log.Warn($"different position: {_spawnGroup}, {_id}");
-                return;
+                Log.Info($"[CBS] mes grid set: {grid.DisplayName} for spawn group: {_spawnGroup}, id: {_id}");
+                SpawnedGrid = grid;
+                State = SpawningState.Success;
+                OnGridSet?.Invoke();
             }
-
-            grid.UpdateStorageValue(ModStorageKey, _id);
-            SetSpawnedGrid(grid);
         }
 
-        public void SetSpawnedGrid(IMyCubeGrid grid)
-        {
-            SpawnedGrid = grid;
-            State = SpawningState.Success;
-            OnGridSet?.Invoke();
-        }
-
-        public static bool IsMyGrid(IMyCubeGrid grid, string id)
+        public bool IsMine(IMyCubeGrid grid)
         {
             if (grid == null) return false;
-            if (id == null) return true;
 
-            string existingId;
-            if (!grid.TryGetStorageValue(ModStorageKey, out existingId)) return false;
-            if (existingId != id) return false;
+            NpcData npcData;
+            if (!NpcData.TryGetNpcData(grid, out npcData)) return false; // shouldn't happen tho
+            if (npcData.SpawnGroupName != _spawnGroup) return false;
+            if (npcData.Context != _id) return false;
             return true;
         }
     }
