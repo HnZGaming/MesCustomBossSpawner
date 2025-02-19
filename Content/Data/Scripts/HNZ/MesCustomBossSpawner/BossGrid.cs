@@ -81,14 +81,14 @@ namespace HNZ.MesCustomBossSpawner
                 if (_scheduler.Update(DateTime.Now) && !_isActivated)
                 {
                     var result = TryActivate();
-                    Log.Info($"activation (scheduled) result: {result}; {_bossConfig.SpawnGroup}");
+                    Log.Info($"activation (scheduled) result: {result}; {_bossConfig.Id}");
                 }
 
                 IMyPlayer player;
                 if (TryDetectPlayerEncounter(out player))
                 {
                     var result = TrySpawn();
-                    Log.Info($"spawn (scheduled) result: {result}; {_bossConfig.SpawnGroup}, player: {player.DisplayName}");
+                    Log.Info($"spawn (scheduled) result: {result}; {_bossConfig.Id}, player: {player.DisplayName}");
                 }
             }
 

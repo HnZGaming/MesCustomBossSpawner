@@ -73,7 +73,7 @@ namespace HNZ.MesCustomBossSpawner
         {
             if (IsMine(grid))
             {
-                Log.Info($"[CBS] mes grid set: {grid.DisplayName} for spawn group: {_spawnGroup}, id: {_id}");
+                Log.Info($"mes grid set: {grid.DisplayName} for spawn group: {_spawnGroup}, id: {_id}");
                 SpawnedGrid = grid;
                 State = SpawningState.Success;
                 OnGridSet?.Invoke();

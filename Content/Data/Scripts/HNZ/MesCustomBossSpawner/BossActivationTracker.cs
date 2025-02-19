@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using HNZ.Utils.Logging;
 using Sandbox.ModAPI;
-using VRage.Utils;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
 {
     public sealed class BossActivationTracker
     {
+        static readonly Logger Log = LoggerManager.Create(nameof(BossActivationTracker));
         public static readonly BossActivationTracker Instance = new BossActivationTracker();
         const string Key = "BossActivationTracker";
 
@@ -31,11 +32,11 @@ namespace HNZ.MesCustomBossSpawner
                     _activations[kvp.Key] = kvp.Value;
                 }
 
-                MyLog.Default.Info($"[CBS] BossActivationTracker.Load() existing data loaded; count: {activities.Count}");
+                Log.Info($"BossActivationTracker.Load() existing data loaded; count: {activities.Count}");
             }
             else
             {
-                MyLog.Default.Info("[CBS] BossActivationTracker.Load() new data");
+                Log.Info("BossActivationTracker.Load() new data");
             }
         }
 
@@ -47,7 +48,7 @@ namespace HNZ.MesCustomBossSpawner
                 var dataStr = Convert.ToBase64String(data);
                 MyAPIGateway.Utilities.SetVariable(Key, dataStr);
                 _isDirty = false;
-                MyLog.Default.Info($"[CBS] BossActivationTracker.Update(); count: {_activations.Count}");
+                Log.Info($"BossActivationTracker.Update(); count: {_activations.Count}");
             }
         }
 
@@ -55,14 +56,14 @@ namespace HNZ.MesCustomBossSpawner
         {
             _activations[id] = position;
             _isDirty = true;
-            MyLog.Default.Info($"[CBS] BossActivationTracker.OnActivate({id}, {position})");
+            Log.Info($"BossActivationTracker.OnActivate({id}, {position})");
         }
 
         public void OnInvalidate(string id)
         {
             _activations.Remove(id);
             _isDirty = true;
-            MyLog.Default.Info($"[CBS] BossActivationTracker.OnInvalidate({id})");
+            Log.Info($"BossActivationTracker.OnInvalidate({id})");
         }
 
         public bool TryGetActivationPosition(string id, out Vector3D position)
