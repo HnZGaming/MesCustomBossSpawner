@@ -10,7 +10,6 @@ using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRage.ModAPI;
-using VRage.Utils;
 using VRageMath;
 
 namespace HNZ.MesCustomBossSpawner
@@ -206,20 +205,6 @@ namespace HNZ.MesCustomBossSpawner
                 return false;
             }
 
-            // not a 100% proof but checks if the boss has already spawned there
-            var searchSphere = (BoundingSphereD)_bossConfig.SpawnSphere;
-            var existingGrids = MyEntities
-                .GetTopMostEntitiesInSphere(ref searchSphere)
-                .OfType<IMyCubeGrid>();
-            foreach (var existingGrid in existingGrids)
-            {
-                if (_spawner.IsMine(existingGrid))
-                {
-                    Log.Warn($"aborted spawning; already spawned: {_bossConfig.Id}");
-                    return false;
-                }
-            }
-
             MatrixD? spawnPosition;
             if (_activationPosition == null)
             {
@@ -275,14 +260,9 @@ namespace HNZ.MesCustomBossSpawner
         {
             var ownerId = grid.BigOwners.GetFirstOrElse(0);
             if (ownerId == 0) return false;
-            Log.Info("4: owned by somebody");
             if (MyAPIGateway.Players.TryGetSteamId(ownerId) != 0) return false;
-            Log.Info("5: owned by npc");
-
             if (!MyVisualScriptLogicProvider.HasPower($"{grid.EntityId}")) return false;
-            MyLog.Default.Info("6: powered");
             if (!ContainsRivalAiBlock(grid)) return false;
-            MyLog.Default.Info("7: has AI blocks");
 
             return true;
         }
