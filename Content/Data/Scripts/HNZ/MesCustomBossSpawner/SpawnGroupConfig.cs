@@ -11,5 +11,8 @@ namespace HNZ.MesCustomBossSpawner
 
         [XmlAttribute]
         public float Weight = 1;
+
+        [XmlAttribute]
+        public string MainPrefab = "";
     }
 }

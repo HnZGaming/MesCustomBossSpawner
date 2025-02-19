@@ -21,12 +21,14 @@ namespace HNZ.MesCustomBossSpawner
 
         readonly MESApi _mesApi;
         readonly string _spawnGroup;
+        readonly string _mainPrefab;
         readonly string _id;
 
-        public MesSpawner(MESApi mesApi, string spawnGroup, string id)
+        public MesSpawner(MESApi mesApi, string id, string spawnGroup, string mainPrefab)
         {
             _mesApi = mesApi;
             _spawnGroup = spawnGroup;
+            _mainPrefab = mainPrefab;
             _id = id;
             State = SpawningState.Idle;
         }
@@ -88,6 +90,7 @@ namespace HNZ.MesCustomBossSpawner
             if (!NpcData.TryGetNpcData(grid, out npcData)) return false; // shouldn't happen tho
             if (npcData.SpawnGroupName != _spawnGroup) return false;
             if (npcData.Context != _id) return false;
+            if (!string.IsNullOrEmpty(_mainPrefab) && npcData.OriginalPrefabId != _mainPrefab) return false; // sidekicks
             return true;
         }
     }

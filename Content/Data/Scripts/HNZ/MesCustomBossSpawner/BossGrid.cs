@@ -35,9 +35,9 @@ namespace HNZ.MesCustomBossSpawner
             _scheduler = new Scheduler(bossConfig.Schedules);
             _gpsId = bossConfig.Id.GetHashCode();
 
-            var spawnGroupIndex = MathUtils.WeightedRandom(bossConfig.SpawnGroup.Select(c => c.Weight).ToArray());
-            var spawnGroupName = bossConfig.SpawnGroup[spawnGroupIndex].SpawnGroupName;
-            _spawner = new MesSpawner(mesApi, spawnGroupName, bossConfig.Id);
+            var configIndex = MathUtils.WeightedRandom(bossConfig.SpawnGroup.Select(c => c.Weight).ToArray());
+            var config = bossConfig.SpawnGroup[configIndex];
+            _spawner = new MesSpawner(mesApi, bossConfig.Id, config.SpawnGroupName, config.MainPrefab);
         }
 
         IMyCubeGrid Grid => _spawner.SpawnedGrid;
